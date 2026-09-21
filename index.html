@@ -36,7 +36,51 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:18px 18px;
   color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
-.wrap{max-width:1120px;margin:0 auto;padding:16px}
+.app{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;max-width:1520px;margin:0 auto;padding:16px;align-items:start}
+.wrap{min-width:0}
+.side{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.side h2{margin:0;font:600 16px/1.2 Oswald,Inter,sans-serif}
+.side h3{margin:0;font:600 13px/1.2 Inter,sans-serif}
+.drop{display:block;border:2px dashed var(--amber);border-radius:10px;padding:16px 12px;text-align:center;cursor:pointer;background:var(--bg);font-size:12.5px;color:var(--muted)}
+.drop strong{display:block;color:var(--ink);font-size:14px;margin-bottom:4px}
+.drop.over,.drop:hover{background:var(--hov)}
+.drop:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.stg{border:1px solid var(--amber);border-radius:10px;padding:10px;background:var(--warnbg);display:grid;gap:10px}
+.sc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px}
+.sn{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;font-size:12px;font-weight:500;word-break:break-all}
+.sn small{color:var(--muted);font-weight:400;white-space:nowrap}
+.sf{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sf label{font-size:11px;color:var(--muted);display:grid;gap:2px}
+.sf input{font:12.5px Inter,sans-serif;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0}
+.warn{font-size:11px;color:var(--warn);min-height:14px}
+.sa{display:flex;gap:6px}
+.btn2.primary{background:var(--amber);border-color:var(--amber);color:#1B1200}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+.x:hover{color:var(--bad)}
+.li{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--bg)}
+.li.cur{border-color:var(--amber);background:var(--hov)}
+.lbtn,.li.all{flex:1;text-align:left;border:0;background:transparent;color:var(--ink);font:13px Inter,sans-serif;padding:8px 10px;cursor:pointer;display:block;width:100%;border-radius:8px}
+.lbtn b,.li.all{font-weight:600}
+.lbtn small,.li.all small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+button.li.all{margin-bottom:6px}
+.lbtn:focus-visible,.li.all:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.sidefoot{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.sidefoot .hint{margin:4px 0 0}
+.mtabs{display:flex;gap:6px;padding:12px 0 0;flex-wrap:wrap;align-items:center}
+.mtabs .lb{font-size:12px;color:var(--muted);margin-right:4px}
+.mtab{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 14px;font:500 13px Inter,sans-serif;cursor:pointer}
+.mtab small{opacity:.65;margin-left:4px}
+.mtab[aria-pressed=true]{background:var(--amber);border-color:var(--amber);color:#1B1200}
+.mtab:hover{border-color:var(--amber);background:var(--panel)} .mtab[aria-pressed=true]:hover{background:var(--amber)}
+.mtab:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.sidebtn{display:none}
+input[type=file]{display:none}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;max-height:none}
+  .app.side-closed .side{display:none}
+  .sidebtn{display:inline-block}
+}
 #report{background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:18px 18px;padding:0 0 4px}
 
 /* topo */
@@ -194,6 +238,8 @@ tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
   .noexp{display:none!important}
   :root{padding:0}
   html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .app{display:block;padding:0}
+  .side,.sidebtn{display:none!important}
   .wrap{max-width:none;padding:0}
   .hero,.panel,.note,.top{break-inside:avoid}
   .notes{margin-top:10px}
@@ -207,25 +253,45 @@ tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div id="report">
-    <div class="top">
-      <div>
-        <h1><span class="dot"></span>Acuracidade de estoque · Inventário por SKU</h1>
-        <div class="sub" id="sub"></div>
-      </div>
-      <div class="actions noexp">
-        <label class="btn" for="file" tabindex="0" id="lblFile">Carregar planilha</label>
-        <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" multiple>
-        <input id="fileJson" type="file" accept=".json">
-        <button id="btnReset" type="button">Ver exemplo</button>
-        <button id="btnPng" type="button" class="primary">Baixar imagem</button>
-      </div>
+<div class="app" id="app">
+  <aside class="side noexp" id="side" aria-label="Lotes contados">
+    <h2>Lotes contados</h2>
+    <label class="drop" id="drop" for="file" tabindex="0">
+      <strong>Adicionar lotes</strong>
+      Arraste aqui o arquivo de texto (.txt, .csv) de cada lote contado, ou clique para escolher. Aceita vários de uma vez e planilhas .xlsx.
+    </label>
+    <input id="file" type="file" accept=".txt,.csv,.xlsx,.xls" multiple>
+    <input id="fileJson" type="file" accept=".json">
+    <div id="staged"></div>
+    <div>
+      <h3 id="listTitle" style="margin-bottom:8px"></h3>
+      <div id="lotList"></div>
     </div>
-    <div class="tabs noexp" id="tabs" role="group" aria-label="Visão"></div>
-    <div class="chips noexp" id="chips" role="group" aria-label="Escolher lote"></div>
-    <div id="body"></div>
-  </div>
+    <div class="sidefoot">
+      <button class="btn2" type="button" id="btnExpJson">Exportar backup</button>
+      <button class="btn2" type="button" id="btnImpJson">Importar backup</button>
+      <button class="btn2" type="button" id="btnReset">Ver dados de exemplo</button>
+      <p class="hint" id="storeNote"></p>
+    </div>
+  </aside>
+  <main class="wrap">
+    <div id="report">
+      <div class="top">
+        <div>
+          <h1><span class="dot"></span>Acuracidade de estoque · Inventário por SKU</h1>
+          <div class="sub" id="sub"></div>
+        </div>
+        <div class="actions noexp">
+          <button id="btnSide" type="button" class="sidebtn">Lotes</button>
+          <button id="btnPrint" type="button">Imprimir</button>
+          <button id="btnPng" type="button" class="primary">Baixar imagem</button>
+        </div>
+      </div>
+      <div class="mtabs noexp" id="mtabs" role="group" aria-label="Mês"></div>
+      <div class="tabs noexp" id="tabs" role="group" aria-label="Visão"></div>
+      <div id="body"></div>
+    </div>
+  </main>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -236,7 +302,6 @@ const EMBEDDED = [{"id": "9245", "label": "Lote 9245 · 13/09", "date": "2026-09
 /* ============ CONFIG ============ */
 const CRIT = 2000;          // R$ de divergência absoluta a partir do qual o SKU é "crítico"
 const COMP_TOL = 0.05;      // sobra e falta que se anulam: |saldo| <= 5% do bruto
-const RECENT_CHIPS = 8;     // acima disso, o seletor de lote vira lista suspensa
 
 /* Histórico compartilhado: cole aqui o firebaseConfig do projeto (o mesmo dos outros apps do CD-107).
    Enquanto for null, o histórico fica salvo só neste navegador (localStorage). */
@@ -263,6 +328,11 @@ const isoToday = () => { const d=new Date(); return `${d.getFullYear()}-${pad2(d
 const fDate = iso => { if(!iso||iso==='sem-data') return 'sem data'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
 const fDM = iso => { if(!iso||iso==='sem-data') return '–'; const [,m,d]=iso.split('-'); return `${d}/${m}`; };
 const safeId = s => String(s).trim().replace(/[\/\s]+/g,'-');
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MES_LONG = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const monthKey = iso => /^\d{4}-\d{2}/.test(iso||'') ? iso.slice(0,7) : 'sem-data';
+const monthShort = k => k==='all' ? 'Histórico geral' : k==='sem-data' ? 'Sem data' : `${MES[+k.slice(5)-1]}/${k.slice(0,4)}`;
+const monthLong = k => k==='all' ? 'todo o histórico' : k==='sem-data' ? 'lotes sem data' : `${MES_LONG[+k.slice(5)-1]} de ${k.slice(0,4)}`;
 let toastTimer;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',4200); }
 
@@ -347,7 +417,7 @@ const Store = {
 };
 
 /* ============ ESTADO ============ */
-const state = {view:'sku', lots:[], sample:true, scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp', evoMode:'cum'};
+const state = {view:'sku', month:null, lots:[], sample:true, scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp', evoMode:'cum', staged:[]};
 const hydrate = list => list.map(l=>({id:l.id,label:l.label,date:l.date||null,rows:l.rows.map(normRow)}));
 
 function setLots(defs){
@@ -356,6 +426,7 @@ function setLots(defs){
   state.scope='all'; state.open.clear(); state.q=''; state.onlyDiv=false;
   const seen = new Map();
   state.lots.forEach((lot,i)=>{
+    lot.gi = i;
     lot.out = lot.rows.map(r=>({...r, lotIdx:i, hist:(seen.get(r.end+'|'+r.cod)||[]).slice()}));
     lot.out.forEach(r=>{
       const k = r.end+'|'+r.cod;
@@ -363,15 +434,25 @@ function setLots(defs){
     });
   });
 }
+function monthList(){
+  const s=[...new Set(state.lots.map(l=>monthKey(l.date)))];
+  return s.filter(k=>k!=='sem-data').sort((a,b)=>b.localeCompare(a)).concat(s.includes('sem-data')?['sem-data']:[]);
+}
+function ensureMonth(){
+  const ms=monthList();
+  if(state.month!=='all' && !ms.includes(state.month)) state.month = ms[0] || 'all';
+}
+const monthLots = () => state.month==='all' ? state.lots : state.lots.filter(l=>monthKey(l.date)===state.month);
 async function reloadFromStore(){
   let raw=[]; try{ raw = await Store.load(); }catch(e){ toast('Não consegui ler o histórico: '+e.message); }
   if(raw.length){ state.sample=false; setLots(hydrate(raw)); }
   else { state.sample=true; setLots(EMBEDDED.map(l=>({id:l.id,label:l.label,date:l.date,rows:l.rows.map(normRow)}))); }
+  ensureMonth();
 }
 function scopeRows(){
   if (state.scope==='all'){
     const m = new Map();
-    state.lots.forEach(l=>l.out.forEach(r=>m.set(r.end+'|'+r.cod, r)));
+    monthLots().forEach(l=>l.out.forEach(r=>m.set(r.end+'|'+r.cod, r)));
     return [...m.values()];
   }
   return state.lots[state.scope]?.out || [];
@@ -465,28 +546,40 @@ function svgChart(labels, series, fmt){
 
 /* ============ RENDER: dispatcher ============ */
 function render(){
-  renderTabs(); renderChips();
+  renderMonthTabs(); renderTabs(); renderSide();
   if(state.view==='evo') renderEvo(); else renderSku();
+}
+function renderMonthTabs(){
+  const m=$('#mtabs'), ms=monthList();
+  const cnt = k => k==='all' ? state.lots.length : state.lots.filter(l=>monthKey(l.date)===k).length;
+  m.innerHTML = `<span class="lb">Mês</span>` + ms.map(k=>`<button type="button" class="mtab" data-k="${k}" aria-pressed="${state.month===k}">${monthShort(k)}<small>${cnt(k)}</small></button>`).join('')
+    + `<button type="button" class="mtab" data-k="all" aria-pressed="${state.month==='all'}">Histórico geral<small>${cnt('all')}</small></button>`;
+  m.querySelectorAll('.mtab').forEach(b=>b.addEventListener('click',()=>{ state.month=b.dataset.k; state.scope='all'; state.open.clear(); render(); }));
 }
 function renderTabs(){
   const t=$('#tabs');
   t.innerHTML = `<button type="button" class="tab" data-v="sku" aria-pressed="${state.view==='sku'}">Inventário por SKU</button>
                  <button type="button" class="tab" data-v="evo" aria-pressed="${state.view==='evo'}">Evolução e recorrência</button>`;
-  t.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.v; render(); window.scrollTo({top:0}); }));
+  t.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.v; render(); }));
 }
-function renderChips(){
-  const c = $('#chips');
-  if(state.view!=='sku'){ c.innerHTML=''; c.style.display='none'; return; }
-  c.style.display='';
-  if(state.lots.length>RECENT_CHIPS){
-    c.innerHTML = `<select id="scopeSel" aria-label="Escolher lote"><option value="all">Consolidado (última contagem)</option>${state.lots.map((l,i)=>`<option value="${i}">${esc(l.label)}</option>`).join('')}</select>`;
-    $('#scopeSel').value = String(state.scope);
-    $('#scopeSel').addEventListener('change',e=>{ state.scope=e.target.value==='all'?'all':+e.target.value; state.open.clear(); render(); });
-    return;
-  }
-  c.innerHTML = `<button type="button" class="chip" aria-pressed="${state.scope==='all'}" data-s="all">Consolidado<small>última contagem</small></button>`
-    + state.lots.map((l,i)=>`<button type="button" class="chip" aria-pressed="${state.scope===i}" data-s="${i}">${esc(l.label)}</button>`).join('');
-  c.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.scope=b.dataset.s==='all'?'all':+b.dataset.s; state.open.clear(); render(); }));
+function renderSide(){
+  const ml=monthLots();
+  $('#listTitle').textContent = state.month==='all' ? 'Todos os lotes' : 'Lotes de '+monthLong(state.month);
+  const nDivOf = l => l.out.filter(r=>r.div!==0).length;
+  $('#lotList').innerHTML = ml.length
+    ? `<button type="button" class="li all ${state.scope==='all'&&state.view==='sku'?'cur':''}" data-gi="all">Consolidado ${state.month==='all'?'geral':'do mês'}<small>${ml.length} lote(s) · última contagem</small></button>`
+      + [...ml].reverse().map(l=>`<div class="li ${state.scope===l.gi&&state.view==='sku'?'cur':''}"><button type="button" class="lbtn" data-gi="${l.gi}"><b>${esc(l.label)}</b><small>${fDate(l.date)} · ${l.rows.length} linhas · ${nDivOf(l)} divergente(s)</small></button>${state.sample?'':`<button type="button" class="x" data-del="${esc(l.id)}" aria-label="Excluir ${esc(l.label)}" title="Excluir lote">×</button>`}</div>`).join('')
+    : '<p class="hint">Nenhum lote neste mês.</p>';
+  $('#lotList').querySelectorAll('[data-gi]').forEach(b=>b.addEventListener('click',()=>{
+    state.scope = b.dataset.gi==='all' ? 'all' : +b.dataset.gi; state.view='sku'; state.open.clear(); render(); if(innerWidth<=980) $('#app').classList.add('side-closed');
+  }));
+  $('#lotList').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{
+    if(!confirm('Excluir este lote do histórico?')) return;
+    try{ await Store.remove(b.dataset.del); await reloadFromStore(); render(); toast('Lote excluído.'); }catch(e){ toast('Falha ao excluir: '+e.message); }
+  }));
+  $('#storeNote').textContent = state.sample ? 'Mostrando dados de exemplo. O histórico real começa quando você adicionar o primeiro lote.'
+    : Store.mode==='firebase' ? 'Histórico salvo no Firebase e compartilhado com a equipe.'
+    : 'Histórico salvo somente neste navegador. Para compartilhar com a equipe, preencha FIREBASE_CONFIG no início do script.';
 }
 
 /* ============ RENDER: visão por SKU ============ */
@@ -498,7 +591,7 @@ function renderSku(){
   const okSkus = skus.filter(s=>s.status==='ok').length;
   const accQ = accOf(T.ger,T.abs);
   const gross = T.sobra - T.falta, saldo = T.sobra + T.falta;
-  const scopeName = state.scope==='all' ? 'Consolidado' : state.lots[state.scope].label;
+  const scopeName = state.scope==='all' ? 'Consolidado · '+monthShort(state.month) : state.lots[state.scope].label;
   $('#sub').textContent = `${scopeName} · ${skus.length} SKUs · ${T.n} endereços · emitido em ${new Date().toLocaleDateString('pt-BR')}`;
 
   const order = {crit:0,div:1,comp:2,ok:3};
@@ -585,7 +678,7 @@ function renderSku(){
       <h2>Lotes</h2>
       <div class="tw" style="max-height:230px;overflow-y:auto"><table>
         <thead><tr><th>Lote</th><th>Endereços</th><th>100% OK</th><th>Acur. qtd.</th><th>Saldo R$</th></tr></thead>
-        <tbody>${state.lots.map((l,i)=>{const t=analyze(l.out).T; return `<tr class="lote ${state.scope===i?'cur':''}" data-lote="${i}"><td>${esc(l.label)}</td><td class="num">${t.n}</td><td class="num">${fPct(1-t.nDiv/t.n)}</td><td class="num">${fPct(accOf(t.ger,t.abs))}</td><td class="num ${signCls(t.sobra+t.falta)}">${fBRL0(t.sobra+t.falta)}</td></tr>`}).join('')}</tbody>
+        <tbody>${monthLots().map(l=>{const t=analyze(l.out).T; return `<tr class="lote ${state.scope===l.gi?'cur':''}" data-lote="${l.gi}"><td>${esc(l.label)}</td><td class="num">${t.n}</td><td class="num">${fPct(1-t.nDiv/t.n)}</td><td class="num">${fPct(accOf(t.ger,t.abs))}</td><td class="num ${signCls(t.sobra+t.falta)}">${fBRL0(t.sobra+t.falta)}</td></tr>`}).join('')}</tbody>
       </table></div>
     </section>
   </div>
@@ -654,11 +747,11 @@ function bindSku(skus){
 
 /* ============ RENDER: evolução e recorrência ============ */
 function renderEvo(){
-  const box=$('#body'), lots=state.lots;
+  const box=$('#body'), lots=monthLots();
   if(!lots.length){ box.innerHTML='<div class="panel empty">Sem lotes no histórico ainda.</div>'; return; }
   const days = evoData(lots), R = recurrence(lots), cum = state.evoMode==='cum';
   const last = days[days.length-1];
-  $('#sub').textContent = `${lots.length} lotes · ${days.length} dia(s) · ${fDate(days[0].date)} a ${fDate(last.date)}`;
+  $('#sub').textContent = `${monthShort(state.month)} · ${lots.length} lote(s) · ${days.length} dia(s) · ${fDate(days[0].date)} a ${fDate(last.date)}`;
 
   const labels = days.map(d=>fDM(d.date));
   const skuSeries = [{vals:days.map(d=>cum?d.skusCum:d.skus), color:css('--navy2')||'#16265A'}];
@@ -690,9 +783,6 @@ function renderEvo(){
       <td style="text-align:left">${e.ev.map(x=>`${esc(lots[x.i].label)}: ${x.div>0?'+':''}${fNum(x.div)} (${fBRL0(x.val)})`).join('<br>')}</td>
       <td class="tag" style="text-align:left">${same?'igual em todos os lotes, sem ajuste':'mudou entre os lotes'}</td></tr>`; }).join('');
 
-  const histRows = [...lots].reverse().map(l=>`<tr><td>${esc(l.label)}</td><td>${fDate(l.date)}</td><td class="num">${l.rows.length}</td>
-    <td style="text-align:right">${state.sample?'':`<button class="btn2 del" type="button" data-del="${esc(l.id)}">Excluir</button>`}</td></tr>`).join('');
-
   box.innerHTML = `
   ${state.sample ? '<div class="banner noexp">Dados de exemplo (as datas do exemplo são ilustrativas). O histórico real começa quando você carrega as planilhas.</div>' : ''}
   <div class="kstrip">
@@ -722,27 +812,14 @@ function renderEvo(){
       <div class="tw"><table style="min-width:640px"><thead><tr><th>Endereço</th><th>SKU</th><th>Ocorrências</th><th>Situação</th></tr></thead><tbody>${addrRows}</tbody></table></div>` : ''}
   </section>
 
-  <section class="panel noexp hist">
-    <div class="head"><div><h2>Histórico salvo</h2>
-      <p class="hint">${Store.mode==='firebase'?'Salvo no Firebase e compartilhado com a equipe.':'Salvo somente neste navegador. Para compartilhar com a equipe, preencha FIREBASE_CONFIG no início do script.'}</p></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn2" type="button" id="btnExpJson">Exportar backup</button><button class="btn2" type="button" id="btnImpJson">Importar backup</button></div></div>
-    <div class="tw" style="max-height:260px;overflow-y:auto"><table style="min-width:420px"><thead><tr><th>Lote</th><th>Data</th><th>Linhas</th><th></th></tr></thead><tbody>${histRows}</tbody></table></div>
-  </section>
-
   <div class="foot noexp">
     <span>Acumulado soma o que cada dia encontrou. Se o mesmo endereço continua divergente em dias seguidos, ele volta a somar, e aparece em “Endereços que voltaram a divergir”.</span>
   </div>`;
 
   box.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{ state.evoMode=b.dataset.m; renderEvo(); }));
-  box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{
-    if(!confirm('Excluir este lote do histórico?')) return;
-    try{ await Store.remove(b.dataset.del); await reloadFromStore(); render(); toast('Lote excluído.'); }catch(e){ toast('Falha ao excluir: '+e.message); }
-  }));
-  const ej=$('#btnExpJson'); if(ej) ej.addEventListener('click',exportJson);
-  const ij=$('#btnImpJson'); if(ij) ij.addEventListener('click',()=>$('#fileJson').click());
 }
 
-/* ============ CARREGAR / EXPORTAR ============ */
+/* ============ CARREGAR LOTES (barra lateral) ============ */
 async function saveDefs(defs){
   let ok=0;
   for(const d of defs){
@@ -752,11 +829,26 @@ async function saveDefs(defs){
   await reloadFromStore(); render();
   if(ok) toast(`${ok} lote(s) salvo(s) no histórico.`);
 }
-$('#btnReset').addEventListener('click', ()=>{ state.sample=true; setLots(EMBEDDED.map(l=>({id:l.id,label:l.label,date:l.date,rows:l.rows.map(normRow)}))); render(); toast('Mostrando dados de exemplo. Nada foi apagado do histórico.'); });
-$('#lblFile').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#file').click(); } });
-$('#file').addEventListener('change', async e=>{
-  const files=[...e.target.files]; if(!files.length) return;
-  const defs=[];
+const mkLabel = (id,date) => (/^\d+$/.test(id) ? 'Lote '+id : id) + ' · ' + fDM(date);
+function yearFor(dd,mm){ const now=new Date(); let y=now.getFullYear(); if(new Date(y,mm-1,dd).getTime() > now.getTime()+3*864e5) y--; return y; }
+function guessDate(name, lastMod){
+  let m;
+  if((m=/(?<!\d)(20\d{2})[-_.](\d{2})[-_.](\d{2})(?!\d)/.exec(name))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if((m=/(?<!\d)(\d{2})[-_.](\d{2})[-_.](20\d{2})(?!\d)/.exec(name))) return `${m[3]}-${m[2]}-${m[1]}`;
+  if((m=/(?:^|\D)(\d{1,2})[-_.](\d{1,2})(?!\d)/.exec(name)) && +m[1]<=31 && +m[2]<=12) return `${yearFor(+m[1],+m[2])}-${pad2(+m[2])}-${pad2(+m[1])}`;
+  const d=new Date(lastMod||Date.now()); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+function guessId(name){
+  const base = name.replace(/\.[^.]+$/,'').replace(/(?<!\d)20\d{2}[-_.]\d{2}[-_.]\d{2}(?!\d)|(?<!\d)\d{2}[-_.]\d{2}[-_.]20\d{2}(?!\d)/g,'');
+  const m=/(\d{3,})/.exec(base); return m ? m[1] : safeId(name.replace(/\.[^.]+$/,''));
+}
+async function readText(file){
+  const buf = await file.arrayBuffer();
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+  catch(e){ return new TextDecoder('windows-1252').decode(buf); }
+}
+async function stageFiles(files){
+  const staged=[];
   try{
     for(const f of files){
       if(/\.(xlsx|xls)$/i.test(f.name)){
@@ -764,23 +856,71 @@ $('#file').addEventListener('change', async e=>{
         wb.SheetNames.forEach(n=>{
           const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});
           const rows = aoa.filter(r=>isAddr(r[0])).map(normRow);
-          if(rows.length) defs.push({id:idFromSheet(n), label:labelFromSheet(n), date:dateFromSheet(n)||askDate(n), rows});
+          if(rows.length) staged.push({name:f.name+' · '+n, id:idFromSheet(n), date:dateFromSheet(n)||guessDate(f.name,f.lastModified), rows});
         });
       } else {
-        const rows = parseCSV(await f.text()), base=f.name.replace(/\.[^.]+$/,'');
-        if(rows.length) defs.push({id:safeId(base), label:base, date:askDate(base), rows});
+        const rows = parseCSV(await readText(f));
+        if(rows.length) staged.push({name:f.name, id:guessId(f.name), date:guessDate(f.name,f.lastModified), rows});
       }
     }
   }catch(err){ alert('Não consegui ler o arquivo: '+err.message); return; }
-  e.target.value='';
-  if(!defs.length){ alert('Nenhuma linha de endereço encontrada. Confira se as colunas seguem o padrão: Endereço; Código; Produto; Embalagem; Qtde CONTAGEM 1; Qtde GERADA; Divergência; Valor Divergência.'); return; }
-  state.view='sku'; await saveDefs(defs);
-});
+  if(!staged.length){ alert('Nenhuma linha de endereço encontrada. Confira se as colunas seguem o padrão: Endereço; Código; Produto; Embalagem; Qtde CONTAGEM 1; Qtde GERADA; Divergência; Valor Divergência.'); return; }
+  state.staged = state.staged.concat(staged);
+  renderStaged();
+  if(innerWidth<=980) $('#app').classList.remove('side-closed');
+}
+function stagedWarn(i){
+  const s=state.staged[i], el=document.getElementById('w'+i); if(!el||!s) return;
+  const id=safeId(s.id), ex = state.sample ? null : state.lots.find(l=>l.id===id);
+  const aba = /^\d{4}-\d{2}-\d{2}$/.test(s.date||'') ? 'Vai para a aba '+monthShort(monthKey(s.date))+'.' : 'Informe a data.';
+  el.textContent = (ex ? `Lote já existe (${fDate(ex.date)}): será substituído. ` : '') + aba;
+}
+function renderStaged(){
+  const box=$('#staged');
+  if(!state.staged.length){ box.innerHTML=''; return; }
+  box.innerHTML = `<div class="stg"><h3>Confira antes de salvar</h3>
+    ${state.staged.map((s,i)=>`<div class="sc">
+      <div class="sn"><span>${esc(s.name)} <small>${s.rows.length} linhas</small></span><button type="button" class="x" data-rm="${i}" aria-label="Remover da lista">×</button></div>
+      <div class="sf"><label>Nº do lote<input data-f="id" data-i="${i}" value="${esc(s.id)}"></label><label>Data do lote<input type="date" data-f="date" data-i="${i}" value="${esc(s.date||'')}"></label></div>
+      <div class="warn" id="w${i}"></div></div>`).join('')}
+    <div class="sa"><button type="button" class="btn2 primary" id="btnSaveStaged">Salvar ${state.staged.length} lote(s)</button><button type="button" class="btn2" id="btnCancelStaged">Cancelar</button></div></div>`;
+  box.querySelectorAll('input[data-f]').forEach(inp=>inp.addEventListener('input',()=>{ const i=+inp.dataset.i; state.staged[i][inp.dataset.f]=inp.value; stagedWarn(i); }));
+  box.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{ state.staged.splice(+b.dataset.rm,1); renderStaged(); }));
+  $('#btnCancelStaged').addEventListener('click',()=>{ state.staged=[]; renderStaged(); });
+  $('#btnSaveStaged').addEventListener('click',saveStaged);
+  state.staged.forEach((_,i)=>stagedWarn(i));
+}
+async function saveStaged(){
+  const defs=[];
+  for(const s of state.staged){
+    const id=safeId(s.id||'');
+    if(!id){ alert('Informe o número do lote de '+s.name); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(s.date||'')){ alert('Informe a data do lote '+id); return; }
+    defs.push({id,label:mkLabel(id,s.date),date:s.date,rows:s.rows});
+  }
+  if(new Set(defs.map(d=>d.id)).size!==defs.length){ alert('Há dois lotes com o mesmo número na lista. Ajuste antes de salvar.'); return; }
+  const newest = defs.map(d=>d.date).sort().pop();
+  state.staged=[]; renderStaged();
+  state.view='sku'; state.month=monthKey(newest);
+  await saveDefs(defs);
+}
+$('#file').addEventListener('change', async e=>{ const fs=[...e.target.files]; e.target.value=''; if(fs.length) await stageFiles(fs); });
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop',async e=>{ const fs=[...(e.dataTransfer?.files||[])]; if(fs.length) await stageFiles(fs); });
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#file').click(); } });
+
+$('#btnReset').addEventListener('click', ()=>{ state.sample=true; setLots(EMBEDDED.map(l=>({id:l.id,label:l.label,date:l.date,rows:l.rows.map(normRow)}))); state.month=null; ensureMonth(); render(); toast('Mostrando dados de exemplo. Nada foi apagado do histórico.'); });
+$('#btnSide').addEventListener('click',()=>$('#app').classList.toggle('side-closed'));
+$('#btnPrint').addEventListener('click',()=>window.print());
 async function exportJson(){
   const raw = await Store.load();
   const blob = new Blob([JSON.stringify(raw)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='inventario_sku_historico_'+isoToday()+'.json'; a.click();
 }
+$('#btnExpJson').addEventListener('click',exportJson);
+$('#btnImpJson').addEventListener('click',()=>$('#fileJson').click());
 $('#fileJson').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return;
   try{
@@ -796,7 +936,7 @@ $('#btnPng').addEventListener('click', async ()=>{
   try{
     const canvas = await html2canvas(el,{scale:2,backgroundColor:getComputedStyle(document.body).backgroundColor,useCORS:true});
     const a=document.createElement('a'); a.href=canvas.toDataURL('image/png');
-    a.download=(state.view==='evo'?'inventario_sku_evolucao_':'inventario_por_sku_')+isoToday()+'.png'; a.click();
+    a.download=(state.view==='evo'?'inventario_sku_evolucao_':'inventario_por_sku_')+(state.month||'geral')+'_'+isoToday()+'.png'; a.click();
   }catch(err){ alert('Falha ao gerar imagem: '+err.message); }
   el.classList.remove('exporting');
 });
@@ -805,6 +945,7 @@ try{ window.matchMedia?.('(prefers-color-scheme: dark)')?.addEventListener?.('ch
 (async function init(){
   await Store.init();
   await reloadFromStore();
+  if(innerWidth<=980) $('#app').classList.add('side-closed');
   render();
 })();
 </script>
