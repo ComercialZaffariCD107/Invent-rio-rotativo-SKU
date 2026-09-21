@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inventário por SKU · CD-107</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#EEF1F8; --dot:#D3D9EA; --panel:#FFFFFF; --ink:#131A2E; --muted:#5B6683; --line:#DCE1EE;
+  --navy:#0E1B3D; --navy2:#16265A; --amber:#E48B00;
+  --ok:#1F8A5B; --okbg:#E1F3E9; --bad:#C0392B; --badbg:#FBE3E0;
+  --warn:#A96300; --warnbg:#FDEED0; --comp:#3556B5; --compbg:#E3E9F8;
+  --hov:rgba(228,139,0,.09); --cur:rgba(228,139,0,.17); --detbg:rgba(14,27,61,.045);
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1024; --dot:#18244A; --panel:#121B36; --ink:#E7EBF7; --muted:#98A4C4; --line:#24325C;
+    --ok:#4CC38A; --okbg:#11322A; --bad:#FF7F70; --badbg:#3A1B20;
+    --warn:#F2AA42; --warnbg:#3A2A0E; --comp:#93AAF2; --compbg:#1A2750; --detbg:rgba(255,255,255,.05);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1024; --dot:#18244A; --panel:#121B36; --ink:#E7EBF7; --muted:#98A4C4; --line:#24325C;
+  --ok:#4CC38A; --okbg:#11322A; --bad:#FF7F70; --badbg:#3A1B20;
+  --warn:#F2AA42; --warnbg:#3A2A0E; --comp:#93AAF2; --compbg:#1A2750; --detbg:rgba(255,255,255,.05);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:18px 18px;
+  color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.num{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1120px;margin:0 auto;padding:16px}
+#report{background:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:18px 18px;padding:0 0 4px}
+
+/* topo */
+.top{background:var(--navy);color:#fff;border-radius:12px 12px 0 0;padding:18px 22px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:3px solid var(--amber)}
+.top h1{margin:0;font:600 24px/1.1 Oswald,Inter,sans-serif;letter-spacing:.01em}
+.top .sub{margin-top:5px;color:#AEB9DA;font-size:12.5px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--amber);margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(228,139,0,.6)}70%{box-shadow:0 0 0 8px rgba(228,139,0,0)}100%{box-shadow:0 0 0 0 rgba(228,139,0,0)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:500 12.5px Inter,sans-serif;border-radius:8px;padding:8px 12px;border:1px solid #3A4A82;background:var(--navy2);color:#fff;cursor:pointer}
+button:hover,.btn:hover{background:#1E3273}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1B1200}
+button.primary:hover{background:#F39C12}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,.tile:focus-visible,.chip:focus-visible,tr.sku:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+input[type=file]{display:none}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 12px;font:500 12.5px Inter,sans-serif;cursor:pointer}
+.chip:hover{border-color:var(--amber);background:var(--panel)}
+.chip[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip small{opacity:.7;margin-left:4px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:300px 1fr;gap:14px}
+.ledger{background:var(--navy);color:#fff;border-radius:12px;padding:20px}
+.ledger .big{font:600 54px/1 Oswald,Inter,sans-serif;margin:6px 0 10px}
+.ledger .lbl{color:#AEB9DA;font-size:12.5px}
+.bar{height:6px;border-radius:99px;background:#2B3A70;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--amber)}
+.ledger dl{margin:18px 0 0;display:grid;gap:0}
+.ledger .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-top:1px solid #2B3A70}
+.ledger dt{color:#AEB9DA;font-size:12.5px}
+.ledger dd{margin:0;text-align:right;font-weight:600}
+.ledger dd small{display:block;color:#8E9BC4;font-weight:400;font-size:11px}
+
+.map{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.map h2,.panel h2{margin:0 0 3px;font:600 16px/1.2 Oswald,Inter,sans-serif;letter-spacing:.01em}
+.hint{color:var(--muted);font-size:12px;margin:0 0 12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:12px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{border-radius:8px;padding:9px 10px;border:1px solid transparent;border-left-width:4px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);display:flex;flex-direction:column;gap:4px;min-height:84px}
+.tile .cod{font-size:11px;color:var(--muted)}
+.tile .nm{font-size:12px;font-weight:500;line-height:1.25;max-height:2.5em;overflow:hidden}
+.tile .ft{margin-top:auto;font-size:12px;font-weight:600}
+.tile.ok{background:var(--okbg);border-left-color:var(--ok)} .tile.ok .ft{color:var(--ok)}
+.tile.div{background:var(--warnbg);border-left-color:var(--amber)} .tile.div .ft{color:var(--warn)}
+.tile.crit{background:var(--badbg);border-left-color:var(--bad)} .tile.crit .ft{color:var(--bad)}
+.tile.comp{background:var(--compbg);border-left-color:var(--comp)} .tile.comp .ft{color:var(--comp)}
+.legend .l-ok{--c:var(--ok)} .legend .l-div{--c:var(--amber)} .legend .l-crit{--c:var(--bad)} .legend .l-comp{--c:var(--comp)}
+
+/* faixa financeira */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
+.fin{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:16px;align-items:center}
+.fin .cell .k{font-size:12px;color:var(--muted)}
+.fin .cell .v{font:600 26px/1.15 Oswald,Inter,sans-serif}
+.fin .cell.right{text-align:right}
+.fin .sobra .v{color:var(--ok)} .fin .falta .v{color:var(--bad)}
+.split{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--line)}
+.split .f{background:var(--bad)} .split .s{background:var(--ok)}
+.fin .mid .cap{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px;gap:10px;flex-wrap:wrap}
+.fin .mid .cap b{color:var(--ink)}
+.pos{color:var(--ok)} .neg{color:var(--bad)}
+
+/* atenção */
+.notes{display:grid;gap:8px;margin-top:14px}
+.note{border-radius:10px;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--amber);font-size:13px}
+.note b{font-weight:600}
+
+/* tabela */
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 12px}
+.tools input[type=search],.tools select{font:13px Inter,sans-serif;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tools label{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th{font-weight:500;font-size:12px;color:var(--muted);text-align:right;padding:8px 8px;border-bottom:2px solid var(--navy)}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+tr.sku{cursor:pointer}
+tr.sku:hover td{background:var(--hov)}
+.skuname{font-weight:500;font-size:13px;display:block;text-align:left}
+.skucod{font-size:11px;color:var(--muted)}
+.chev{display:inline-block;width:14px;color:var(--amber);transition:transform .15s}
+tr.open .chev{transform:rotate(90deg)}
+.imp{display:grid;grid-template-columns:78px 1fr 78px;gap:6px;align-items:center;min-width:280px}
+.imp .v{font-size:11.5px}
+.dv{position:relative;height:10px;background:var(--line);border-radius:3px}
+.dv::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted)}
+.dv i{position:absolute;top:0;bottom:0}
+.dv i.f{right:50%;background:var(--bad);border-radius:3px 0 0 3px}
+.dv i.s{left:50%;background:var(--ok);border-radius:0 3px 3px 0}
+.pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--okbg);color:var(--ok)} .pill.div{background:var(--warnbg);color:var(--warn)}
+.pill.crit{background:var(--badbg);color:var(--bad)} .pill.comp{background:var(--compbg);color:var(--comp)}
+tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
+.det table{min-width:0;font-size:12px}
+.det th{border-bottom:1px solid var(--line);color:var(--muted)}
+.det td{border-bottom:1px dashed var(--line);padding:5px 8px;background:transparent}
+.tag{font-size:11px;color:var(--warn);font-weight:500}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.two .panel{margin-top:14px}
+.mini table{min-width:0;font-size:12.5px}
+.mini tr.lote{cursor:pointer}
+.mini tr.lote:hover td{background:var(--hov)}
+.mini tr.cur td{background:var(--cur)}
+.foot{margin:14px 2px 0;color:var(--muted);font-size:11.5px;display:grid;gap:3px}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+.exporting .noexp{display:none!important}
+
+@media (max-width:860px){
+  .hero,.two,.fin{grid-template-columns:1fr}
+  .fin .cell.right{text-align:left}
+  .top h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="report">
+    <div class="top">
+      <div>
+        <h1><span class="dot"></span>Acuracidade de estoque · Inventário por SKU</h1>
+        <div class="sub" id="sub"></div>
+      </div>
+      <div class="actions noexp">
+        <label class="btn" for="file" tabindex="0" id="lblFile">Carregar planilha</label>
+        <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" multiple>
+        <button id="btnReset" type="button">Dados de exemplo</button>
+        <button id="btnPng" type="button" class="primary">Baixar imagem</button>
+      </div>
+    </div>
+    <div class="chips noexp" id="chips" role="group" aria-label="Escolher lote"></div>
+    <div id="body"></div>
+  </div>
+</div>
+
+<script>
+/* ============ DADOS DE EXEMPLO (Lotes 9245, 9247 e Lote 3) ============ */
+const EMBEDDED = [{"label": "Lote 9245 · 13/09", "rows": [["01.003.42.31.1 P", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "CX 24", 24.0, 9.0, 15.0, 8154.0], ["01.004.104.51.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 23.0, 20.0, 3.0, 556.2], ["01.003.61.1.1 A", 82642, "ESPUMANTE FREIXENET 750ML BRUT PROSSECO-", "UN 1", 24.0, 24.0, 0.0, 0.0], ["01.004.26.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 48.0, 48.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.004.79.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.88.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.93.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.96.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.98.1.1 A", 12067, "FOLHA BOREAL C/500 A4-", "UN 1", 90.0, 90.0, 0.0, 0.0], ["01.004.110.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.058.135.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.143.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.161.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.074.126.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.130.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.131.22.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 80.0, -60.0, -519.0], ["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 114.0, 138.0, -24.0, -2054.4], ["01.055.126.2.1 A", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "UN 1", 24.0, 384.0, -360.0, -8154.0]]}, {"label": "Lote 9247 · 14/09", "rows": [["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 102.0, 0.0, 102.0, 8731.2], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 100.0, 3.0, 228.06], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 20.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.006.42.21.1 P", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "CX 6", 28.0, 28.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.63.1.1 A", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "UN 1", 210.0, 210.0, 0.0, 0.0], ["01.076.123.61.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 36.0, 36.0, 0.0, 0.0], ["01.089.129.71.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 34.0, 34.0, 0.0, 0.0]]}, {"label": "Lote 3", "rows": [["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.005.105.1.1 A", 119887, "VINHO GRILL MASTER 750ML ARG CAB SAUV TTO-", "UN 1", 180.0, 192.0, -12.0, -170.88], ["01.005.108.1.1 A", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "UN 1", 144.0, 144.0, 0.0, 0.0], ["01.005.110.1.1 A", 76405, "VINHO ANJOS 750ML VERDE BCO-", "UN 1", 132.0, 144.0, -12.0, -400.92], ["01.005.40.1.1 A", 112435, "SACOLA DO BEM 60X70CM SUSTENTAVEL ZAFFARI-", "UN 1", 11000.0, 12000.0, -1000.0, -160.0], ["01.005.42.1.1 A", 80336, "BISC BAUDUCCO 100G COOKIES CHOC-", "UN 1", 45.0, 45.0, 0.0, 0.0], ["01.005.72.41.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 16.0, 16.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.005.96.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.006.108.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.006.31.1.1 A", 106290, "MAIONESE LIZA 450G CASEIRA TRAD-", "UN 1", 12.0, 12.0, 0.0, 0.0], ["01.006.32.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.006.45.21.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.47.31.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.49.51.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.62.1.1 A", 67198, "KIT HEINZ KETCHUP 397G +MAION 215G +MOSTAR 255G-", "UN 1", 430.0, 430.0, 0.0, 0.0], ["01.006.82.51.1 P", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "CX 40", 24.0, 23.0, 1.0, 219.6], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 103.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.23.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.24.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.68.31.1 P", 5765, "BISC ZEZE 300G PALITO CHOC-", "CX 15", 18.0, 18.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.011.11.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 24.0, 4.0, 258.88], ["01.012.14.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 45.0, 46.0, -1.0, -121.0], ["01.012.14.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.18.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.012.22.2.3 A", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "UN 1", 200.0, 240.0, -40.0, -219.6], ["01.012.22.31.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 4.0, 4.0, 0.0, 0.0], ["01.012.50.1.1 A", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "UN 1", 280.0, 279.0, 1.0, 12.1], ["01.012.54.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 22.0, 22.0, 0.0, 0.0], ["01.012.60.51.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 26.0, 26.0, 0.0, 0.0], ["01.013.104.1.1 A", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 50.0, 31.0, 19.0, 1229.68], ["01.013.105.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.013.105.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.014.94.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.014.99.61.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.015.88.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.052.138.71.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 12.0, 12.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.055.128.31.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.055.133.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.157.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.060.118.1.1 A", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "UN 1", 156.0, 240.0, -84.0, -1333.92], ["01.063.138.51.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 48.0, 7.0, 41.0, 7812.96]]}];
+
+/* ============ CONFIG ============ */
+const CRIT = 2000;          // R$ de divergência absoluta a partir do qual o SKU é "crítico"
+const COMP_TOL = 0.05;      // sobra e falta que se anulam: |saldo| <= 5% do bruto
+
+/* ============ HELPERS ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fInt = n => Math.round(n).toLocaleString('pt-BR');
+const fNum = n => n.toLocaleString('pt-BR',{maximumFractionDigits:0});
+const fBRL = n => (n<0?'-':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fBRL0 = n => (n<0?'-':'')+'R$ '+Math.abs(Math.round(n)).toLocaleString('pt-BR');
+const fPct = (x,d=1) => (x*100).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const signCls = n => n>0 ? 'pos' : n<0 ? 'neg' : '';
+const clean = s => String(s||'').replace(/-\s*$/,'').trim();
+const factor = emb => { const m = /(\d+)\s*$/.exec(String(emb||'')); return m ? Math.max(1,+m[1]) : 1; };
+const accOf = (ger,abs) => ger>0 ? Math.max(0, 1-abs/ger) : (abs>0 ? 0 : 1);
+const STATUS = {ok:'OK', div:'Divergente', crit:'Crítico', comp:'Compensado'};
+
+function parseNum(v){
+  if (typeof v === 'number') return v;
+  const s = String(v ?? '').trim();
+  if (!s) return 0;
+  return parseFloat(s.replace(/\./g,'').replace(',','.')) || 0;
+}
+function normRow(a){
+  const end = String(a[0]).trim(), emb = String(a[3]||'').trim();
+  const cont = parseNum(a[4]), ger = parseNum(a[5]);
+  const div = a[6]===undefined||a[6]==='' ? cont-ger : parseNum(a[6]);
+  const val = parseNum(a[7]), f = factor(emb);
+  return {end, cod:String(parseNum(a[1])), prod:clean(a[2]), emb, f, tipo:end.slice(-1).toUpperCase()==='A'?'A':'P',
+          cont, ger, div, val, gerU:ger*f, divU:div*f};
+}
+const isAddr = v => /^\d+\.\d+\./.test(String(v||'').trim());
+
+function parseCSV(text){
+  return text.replace(/^\uFEFF/,'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean)
+    .map(l=>l.split(';')).filter(a=>a.length>=8 && isAddr(a[0])).map(normRow);
+}
+function labelFromSheet(name){
+  const m = /LOTE\s*(\d+)\s*[-–]?\s*([\d./]+)?/i.exec(name);
+  if (!m) return name;
+  return 'Lote '+m[1]+(m[2] ? ' · '+m[2].replace(/\./g,'/') : '');
+}
+
+/* ============ ESTADO ============ */
+const state = {lots:[], scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp'};
+
+function setLots(defs){
+  state.lots = defs.map(d=>({label:d.label, rows:d.rows}));
+  state.scope='all'; state.open.clear(); state.q=''; state.onlyDiv=false;
+  const seen = new Map();
+  state.lots.forEach((lot,i)=>{
+    lot.out = lot.rows.map(r=>({...r, lotIdx:i, hist:(seen.get(r.end+'|'+r.cod)||[]).slice()}));
+    lot.out.forEach(r=>{
+      const k = r.end+'|'+r.cod;
+      seen.set(k,[...(seen.get(k)||[]),{lotIdx:i,div:r.div,val:r.val}]);
+    });
+  });
+}
+function scopeRows(){
+  if (state.scope==='all'){
+    const m = new Map();
+    state.lots.forEach(l=>l.out.forEach(r=>m.set(r.end+'|'+r.cod, r)));
+    return [...m.values()];
+  }
+  return state.lots[state.scope]?.out || [];
+}
+
+/* ============ ANÁLISE ============ */
+function analyze(rows){
+  const skuMap = new Map();
+  const area = {A:{n:0,nDiv:0,ger:0,abs:0,sobra:0,falta:0}, P:{n:0,nDiv:0,ger:0,abs:0,sobra:0,falta:0}};
+  const T = {n:0,nDiv:0,ger:0,abs:0,sobra:0,falta:0,nSobra:0,nFalta:0};
+  rows.forEach(r=>{
+    let s = skuMap.get(r.cod);
+    if(!s){ s = {cod:r.cod,prod:r.prod,rows:[],n:0,nDiv:0,ger:0,abs:0,sobra:0,falta:0,nA:0,nP:0}; skuMap.set(r.cod,s); }
+    const isDiv = r.div!==0, ab = Math.abs(r.divU);
+    const targets = [s, T, area[r.tipo]];
+    targets.forEach(t=>{
+      t.n++; t.ger+=r.gerU; t.abs+=ab;
+      if(isDiv) t.nDiv++;
+      if(r.val>0) t.sobra+=r.val; else if(r.val<0) t.falta+=r.val;
+    });
+    if(r.val>0) T.nSobra++; else if(r.val<0) T.nFalta++;
+    s.rows.push(r); r.tipo==='A'?s.nA++:s.nP++;
+  });
+  const skus = [...skuMap.values()];
+  skus.forEach(s=>{
+    s.gross = s.sobra - s.falta; s.saldo = s.sobra + s.falta; s.acc = accOf(s.ger,s.abs);
+    if(!s.nDiv) s.status='ok';
+    else if(s.sobra>0 && s.falta<0 && Math.abs(s.saldo)<=COMP_TOL*s.gross) s.status='comp';
+    else if(s.gross>=CRIT) s.status='crit';
+    else s.status='div';
+  });
+  return {skus, T, area};
+}
+
+/* ============ RENDER ============ */
+function render(){
+  renderChips();
+  const rows = scopeRows();
+  const box = $('#body');
+  if(!rows.length){ box.innerHTML = '<div class="panel empty">Nenhum dado carregado. Use “Carregar planilha” com o arquivo do inventário rotativo.</div>'; $('#sub').textContent=''; return; }
+  const A = analyze(rows);
+  const {skus,T,area} = A;
+  const okSkus = skus.filter(s=>s.status==='ok').length;
+  const accQ = accOf(T.ger,T.abs);
+  const gross = T.sobra - T.falta, saldo = T.sobra + T.falta;
+  const scopeName = state.scope==='all' ? 'Consolidado' : state.lots[state.scope].label;
+  const today = new Date().toLocaleDateString('pt-BR');
+  $('#sub').textContent = `${scopeName} · ${skus.length} SKUs · ${T.n} endereços · emitido em ${today}`;
+
+  const order = {crit:0,div:1,comp:2,ok:3};
+  const tiles = [...skus].sort((a,b)=>order[a.status]-order[b.status] || b.gross-a.gross || a.cod-b.cod).map(s=>{
+    const ft = s.status==='ok' ? 'Sem divergência'
+      : s.status==='comp' ? `Compensa ±${fBRL0(s.sobra)}`
+      : `${fBRL0(s.saldo)}`;
+    return `<button type="button" class="tile ${s.status}" data-cod="${s.cod}" title="${esc(s.prod)}">
+      <span class="cod num">${s.cod}</span><span class="nm">${esc(s.prod)}</span><span class="ft">${ft}</span></button>`;
+  }).join('');
+
+  const nOk = skus.filter(s=>s.status==='ok').length, nDv = skus.filter(s=>s.status==='div').length,
+        nCr = skus.filter(s=>s.status==='crit').length, nCp = skus.filter(s=>s.status==='comp').length;
+
+  const fShare = gross>0 ? (-T.falta/gross*100) : 50, sShare = gross>0 ? (T.sobra/gross*100) : 50;
+
+  // pontos de atenção
+  const notes = [];
+  const byGross = skus.filter(s=>s.gross>0).sort((a,b)=>b.gross-a.gross);
+  if (gross>0 && byGross.length>=3){
+    const top = byGross.slice(0,3), share = top.reduce((a,s)=>a+s.gross,0)/gross;
+    if (share>=0.6) notes.push(`<b>${fPct(share,0)} da divergência absoluta</b> está em 3 SKUs: ${top.map(s=>esc(s.prod)).join('; ')}.`);
+  }
+  skus.filter(s=>s.status==='comp').forEach(s=>{
+    const rs = s.rows.filter(r=>r.val>0), rf = s.rows.filter(r=>r.val<0);
+    const reab = rs.every(r=>r.tipo==='P') && rf.every(r=>r.tipo==='A');
+    notes.push(`<b>${esc(s.prod)}</b>: sobra de ${fBRL(s.sobra)} em ${rs.length} endereço(s) e falta de ${fBRL(-s.falta)} em ${rf.length}, saldo ${fBRL(s.saldo)}. ${reab ? 'Sobra no pulmão e falta na apanha: compatível com reabastecimento feito sem baixa no sistema.' : 'Sobra e falta se anulam: parece erro de endereço, não perda.'}`);
+  });
+  const reinc = rows.filter(r=>r.div!==0 && r.hist.some(h=>h.div===r.div && h.val===r.val));
+  if (reinc.length) notes.push(`<b>Divergência repetida sem ajuste:</b> ${reinc.map(r=>`${esc(r.end)} (${esc(r.prod)}, ${r.div>0?'+':''}${fNum(r.div)} ${esc(r.emb.split(' ')[0])})`).join('; ')}.`);
+
+  box.innerHTML = `
+  <section class="hero">
+    <div class="ledger">
+      <div class="lbl">Acurácia quantitativa</div>
+      <div class="big">${fPct(accQ,2)}</div>
+      <div class="bar"><i style="width:${(accQ*100).toFixed(1)}%"></i></div>
+      <dl>
+        <div class="row"><dt>Endereços 100% OK</dt><dd>${fPct(1-T.nDiv/T.n)}<small>${T.n-T.nDiv} de ${T.n}</small></dd></div>
+        <div class="row"><dt>SKUs 100% OK</dt><dd>${fPct(okSkus/skus.length)}<small>${okSkus} de ${skus.length}</small></dd></div>
+        <div class="row"><dt>Qtd. gerada (un.)</dt><dd class="num">${fInt(T.ger)}</dd></div>
+        <div class="row"><dt>Qtd. divergente abs. (un.)</dt><dd class="num">${fInt(T.abs)}</dd></div>
+      </dl>
+    </div>
+    <div class="map">
+      <h2>O que foi auditado, SKU por SKU</h2>
+      <p class="hint">Cada quadro é um SKU da amostra. Clique para ver os endereços na tabela.</p>
+      <div class="legend"><span class="l-ok">OK (${nOk})</span><span class="l-div">Divergente (${nDv})</span><span class="l-crit">Crítico ≥ ${fBRL0(CRIT)} (${nCr})</span><span class="l-comp">Compensado (${nCp})</span></div>
+      <div class="tiles">${tiles}</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="fin">
+      <div class="cell sobra"><div class="k">Sobra · ${T.nSobra} endereço(s)</div><div class="v">${fBRL0(T.sobra)}</div></div>
+      <div class="mid">
+        <div class="split" role="img" aria-label="Proporção entre falta e sobra"><div class="f" style="width:${fShare}%"></div><div class="s" style="width:${sShare}%"></div></div>
+        <div class="cap"><span>Saldo líquido <b class="${signCls(saldo)}">${fBRL0(saldo)}</b></span><span>Divergência absoluta <b>${fBRL0(gross)}</b></span></div>
+      </div>
+      <div class="cell right falta"><div class="k">Falta · ${T.nFalta} endereço(s)</div><div class="v">${fBRL0(-T.falta)}</div></div>
+    </div>
+  </section>
+
+  ${notes.length ? `<div class="notes">${notes.map(n=>`<div class="note">${n}</div>`).join('')}</div>` : ''}
+
+  <section class="panel" id="secTable">
+    <h2>Resultado por SKU</h2>
+    <div class="tools noexp">
+      <input type="search" id="q" placeholder="Buscar código ou produto" value="${esc(state.q)}" aria-label="Buscar SKU">
+      <select id="sort" aria-label="Ordenar">
+        <option value="imp">Maior impacto (R$)</option>
+        <option value="acc">Menor acurácia</option>
+        <option value="cod">Código</option>
+      </select>
+      <label><input type="checkbox" id="onlyDiv" ${state.onlyDiv?'checked':''}> Só com divergência</label>
+    </div>
+    <div class="tw" id="tbl"></div>
+  </section>
+
+  <div class="two">
+    <section class="panel mini">
+      <h2>Apanha × Pulmão</h2>
+      <table>
+        <thead><tr><th>Área</th><th>Endereços</th><th>100% OK</th><th>Acur. qtd.</th><th>Saldo R$</th></tr></thead>
+        <tbody>${['A','P'].map(k=>{const a=area[k]; return `<tr><td>${k==='A'?'Apanha':'Pulmão'}</td><td class="num">${a.n}</td><td class="num">${a.n?fPct(1-a.nDiv/a.n):'–'}</td><td class="num">${a.n?fPct(accOf(a.ger,a.abs)):'–'}</td><td class="num ${signCls(a.sobra+a.falta)}">${fBRL0(a.sobra+a.falta)}</td></tr>`}).join('')}</tbody>
+      </table>
+    </section>
+    <section class="panel mini">
+      <h2>Lotes da amostra</h2>
+      <table>
+        <thead><tr><th>Lote</th><th>Endereços</th><th>100% OK</th><th>Acur. qtd.</th><th>Saldo R$</th></tr></thead>
+        <tbody>${state.lots.map((l,i)=>{const t=analyze(l.out).T; return `<tr class="lote ${state.scope===i?'cur':''}" data-lote="${i}"><td>${esc(l.label)}</td><td class="num">${t.n}</td><td class="num">${fPct(1-t.nDiv/t.n)}</td><td class="num">${fPct(accOf(t.ger,t.abs))}</td><td class="num ${signCls(t.sobra+t.falta)}">${fBRL0(t.sobra+t.falta)}</td></tr>`}).join('')}</tbody>
+      </table>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span>Quantidades convertidas em unidades pela embalagem (CX 6 = 6 un.). Valores de divergência vêm da planilha do lote.</span>
+    <span>Consolidado usa a última contagem de cada endereço/SKU; ao escolher um lote, vale só a Contagem 1 daquele lote.</span>
+    <span>Compensado: sobra e falta do mesmo SKU se anulam (saldo até ${COMP_TOL*100}% do bruto). Acurácia financeira não entra porque a planilha só traz valor nas linhas com divergência.</span>
+  </div>`;
+
+  $('#sort').value = state.sort;
+  renderTable(skus);
+  bind(skus);
+}
+
+function renderTable(skus){
+  let list = skus.filter(s=>{
+    if(state.onlyDiv && s.status==='ok') return false;
+    if(state.q){ const q=state.q.toLowerCase(); return s.cod.includes(q) || s.prod.toLowerCase().includes(q); }
+    return true;
+  });
+  const cmp = {imp:(a,b)=>b.gross-a.gross||a.acc-b.acc, acc:(a,b)=>a.acc-b.acc||b.gross-a.gross, cod:(a,b)=>a.cod-b.cod}[state.sort];
+  list.sort(cmp);
+  const maxSide = Math.max(1,...skus.map(s=>Math.max(s.sobra,-s.falta)));
+  if(!list.length){ $('#tbl').innerHTML='<div class="empty">Nenhum SKU encontrado com esse filtro.</div>'; return; }
+  const rowsHtml = list.map(s=>{
+    const open = state.open.has(s.cod);
+    const fw = (-s.falta/maxSide*50).toFixed(1), sw = (s.sobra/maxSide*50).toFixed(1);
+    const det = open ? `<tr class="det"><td colspan="7"><table>
+      <thead><tr><th>Endereço</th><th>Área</th><th>Emb.</th><th>Gerada</th><th>Contada</th><th>Diverg.</th><th>Valor</th><th>Lote</th><th></th></tr></thead><tbody>
+      ${[...s.rows].sort((a,b)=>(b.div!==0)-(a.div!==0)||Math.abs(b.val)-Math.abs(a.val)).map(r=>{
+        const rep = r.div!==0 && r.hist.some(h=>h.div===r.div&&h.val===r.val);
+        const prev = r.div!==0 && !rep && r.hist.some(h=>h.div!==0);
+        return `<tr><td class="num" style="text-align:left">${esc(r.end)}</td><td>${r.tipo==='A'?'Apanha':'Pulmão'}</td><td>${esc(r.emb)}</td>
+        <td class="num">${fNum(r.ger)}</td><td class="num">${fNum(r.cont)}</td><td class="num ${signCls(r.div)}">${r.div>0?'+':''}${fNum(r.div)}</td>
+        <td class="num ${signCls(r.val)}">${r.val?fBRL(r.val):'–'}</td><td>${esc(state.lots[r.lotIdx].label)}</td>
+        <td class="tag">${rep?'divergência repetida':prev?'já divergiu em lote anterior':''}</td></tr>`;}).join('')}
+      </tbody></table></td></tr>` : '';
+    return `<tr class="sku ${open?'open':''} " data-cod="${s.cod}" id="sku-${s.cod}" tabindex="0" aria-expanded="${open}">
+      <td><span class="skuname"><span class="chev">▸</span>${esc(s.prod)}</span><span class="skucod num" style="margin-left:14px">${s.cod}</span></td>
+      <td class="num">${s.n}${s.nDiv?` <span class="tag">(${s.nDiv} div.)</span>`:''}<br><span class="skucod">${s.nP} pulmão · ${s.nA} apanha</span></td>
+      <td class="num">${fInt(s.ger)}</td>
+      <td><div class="imp"><span class="v num neg">${s.falta?fBRL0(s.falta):'–'}</span><div class="dv"><i class="f" style="width:${fw}%"></i><i class="s" style="width:${sw}%"></i></div><span class="v num pos" style="text-align:right">${s.sobra?fBRL0(s.sobra):'–'}</span></div></td>
+      <td class="num ${signCls(s.saldo)}">${s.nDiv?fBRL0(s.saldo):'–'}</td>
+      <td class="num">${fPct(s.acc)}</td>
+      <td><span class="pill ${s.status}">${STATUS[s.status]}</span></td></tr>${det}`;
+  }).join('');
+  $('#tbl').innerHTML = `<table><thead><tr><th>SKU</th><th>Endereços</th><th>Qtd. gerada (un.)</th><th style="text-align:center">Falta ◂ impacto R$ ▸ Sobra</th><th>Saldo</th><th>Acur. qtd.</th><th style="text-align:right">Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+  document.querySelectorAll('tr.sku').forEach(tr=>{
+    const go=()=>{ const c=tr.dataset.cod; state.open.has(c)?state.open.delete(c):state.open.add(c); renderTable(skus); const el=document.getElementById('sku-'+c); if(el) el.focus({preventScroll:true}); };
+    tr.addEventListener('click',go);
+    tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
+  });
+}
+
+function bind(skus){
+  document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
+    state.open.add(t.dataset.cod); state.q=''; $('#q').value=''; renderTable(skus);
+    const el=document.getElementById('sku-'+t.dataset.cod);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus({preventScroll:true}); }
+  }));
+  $('#q').addEventListener('input',e=>{ state.q=e.target.value.trim(); renderTable(skus); });
+  $('#sort').addEventListener('change',e=>{ state.sort=e.target.value; renderTable(skus); });
+  $('#onlyDiv').addEventListener('change',e=>{ state.onlyDiv=e.target.checked; renderTable(skus); });
+  document.querySelectorAll('tr.lote').forEach(tr=>tr.addEventListener('click',()=>{ state.scope=+tr.dataset.lote; state.open.clear(); render(); }));
+}
+
+function renderChips(){
+  const c = $('#chips');
+  const all = `<button type="button" class="chip" aria-pressed="${state.scope==='all'}" data-s="all">Consolidado<small>última contagem</small></button>`;
+  c.innerHTML = all + state.lots.map((l,i)=>`<button type="button" class="chip" aria-pressed="${state.scope===i}" data-s="${i}">${esc(l.label)}</button>`).join('');
+  c.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.scope=b.dataset.s==='all'?'all':+b.dataset.s; state.open.clear(); render(); }));
+}
+
+/* ============ CARREGAR / EXPORTAR ============ */
+function loadEmbedded(){
+  setLots(EMBEDDED.map(l=>({label:l.label, rows:l.rows.map(normRow)})));
+  render();
+}
+$('#btnReset').addEventListener('click', loadEmbedded);
+$('#lblFile').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#file').click(); } });
+$('#file').addEventListener('change', async e=>{
+  const files=[...e.target.files]; if(!files.length) return;
+  const defs=[];
+  try{
+    for(const f of files){
+      if(/\.(xlsx|xls)$/i.test(f.name)){
+        const wb = XLSX.read(await f.arrayBuffer(),{type:'array'});
+        wb.SheetNames.forEach(n=>{
+          const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});
+          const rows = aoa.filter(r=>isAddr(r[0])).map(normRow);
+          if(rows.length) defs.push({label:labelFromSheet(n), rows});
+        });
+      } else {
+        const rows = parseCSV(await f.text());
+        if(rows.length) defs.push({label:f.name.replace(/\.[^.]+$/,''), rows});
+      }
+    }
+  }catch(err){ alert('Não consegui ler o arquivo: '+err.message); return; }
+  if(!defs.length){ alert('Nenhuma linha de endereço encontrada. Confira se as colunas seguem o padrão: Endereço; Código; Produto; Embalagem; Qtde CONTAGEM 1; Qtde GERADA; Divergência; Valor Divergência.'); return; }
+  setLots(defs); render(); e.target.value='';
+});
+$('#btnPng').addEventListener('click', async ()=>{
+  const el = $('#report');
+  el.classList.add('exporting');
+  try{
+    const canvas = await html2canvas(el,{scale:2,backgroundColor:getComputedStyle(document.body).backgroundColor,useCORS:true});
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/png');
+    a.download='inventario_por_sku_'+new Date().toISOString().slice(0,10)+'.png'; a.click();
+  }catch(err){ alert('Falha ao gerar imagem: '+err.message); }
+  el.classList.remove('exporting');
+});
+
+loadEmbedded();
+</script>
+</body>
+</html>
