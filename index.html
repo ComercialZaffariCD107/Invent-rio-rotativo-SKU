@@ -89,6 +89,48 @@ input[type=file]{display:none}
 .tile.comp{background:var(--compbg);border-left-color:var(--comp)} .tile.comp .ft{color:var(--comp)}
 .legend .l-ok{--c:var(--ok)} .legend .l-div{--c:var(--amber)} .legend .l-crit{--c:var(--bad)} .legend .l-comp{--c:var(--comp)}
 
+
+/* abas e evolução */
+.tabs{display:flex;gap:6px;padding:12px 0 0;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px 8px 0 0;padding:9px 16px;font:500 13px Inter,sans-serif;cursor:pointer;border-bottom:3px solid transparent}
+.tab[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy);border-bottom-color:var(--amber)}
+.tab:hover{background:var(--panel)} .tab[aria-pressed=true]:hover{background:var(--navy)}
+.tab:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.banner{background:var(--warnbg);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;border-left:4px solid var(--amber)}
+.kstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--navy);color:#fff;border-radius:12px;margin-top:14px;overflow:hidden}
+.kstrip>div{padding:16px 18px;border-right:1px solid #2B3A70}
+.kstrip>div:last-child{border-right:0}
+.kstrip .k{color:#AEB9DA;font-size:12px}
+.kstrip .v{font:600 30px/1.1 Oswald,Inter,sans-serif;margin-top:2px}
+.kstrip small{display:block;color:#8E9BC4;font-size:11px;margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);color:var(--ink);border:0;border-radius:0;padding:6px 12px;font:500 12.5px Inter,sans-serif}
+.seg button[aria-pressed=true]{background:var(--navy);color:#fff}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 14px}
+.charts h3{margin:0 0 4px;font:500 13px Inter,sans-serif;color:var(--muted)}
+.charts .tw{border:1px solid var(--line);border-radius:10px;padding:6px}
+.delta{display:block;font-size:11px;color:var(--muted)}
+.delta.up{color:var(--warn)}
+table.evo{min-width:900px}
+table.evo tr:last-child td{font-weight:600}
+.matrix{min-width:0;width:auto}
+.matrix th{text-align:center;padding:6px 4px;font-size:11px;line-height:1.2}
+.matrix th:first-child,.matrix td:first-child{text-align:left;min-width:220px}
+.matrix td{padding:6px 4px;text-align:center}
+.mc{display:inline-block;width:20px;height:20px;border-radius:5px;vertical-align:middle}
+.mc.ok{background:var(--okbg);border:1px solid var(--ok)}
+.mc.div{background:var(--amber)} .mc.crit{background:var(--bad)}
+.mc.none{background:transparent;border:1px dashed var(--line)}
+.matrix td.sum{text-align:right;padding-left:14px;white-space:nowrap}
+.hist td,.hist th{font-size:12.5px}
+.btn2{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:500 12px Inter,sans-serif;cursor:pointer}
+.btn2:hover{border-color:var(--amber);background:var(--panel)}
+.btn2.del{color:var(--bad)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;border-left:4px solid var(--amber);padding:10px 16px;border-radius:8px;font-size:13px;z-index:20;max-width:90vw;display:none}
+.chips select{font:500 12.5px Inter,sans-serif;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+@media (max-width:860px){.kstrip{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}}
+
 /* faixa financeira */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
 .fin{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:16px;align-items:center}
@@ -175,22 +217,31 @@ tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
       <div class="actions noexp">
         <label class="btn" for="file" tabindex="0" id="lblFile">Carregar planilha</label>
         <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" multiple>
-        <button id="btnReset" type="button">Dados de exemplo</button>
+        <input id="fileJson" type="file" accept=".json">
+        <button id="btnReset" type="button">Ver exemplo</button>
         <button id="btnPng" type="button" class="primary">Baixar imagem</button>
       </div>
     </div>
+    <div class="tabs noexp" id="tabs" role="group" aria-label="Visão"></div>
     <div class="chips noexp" id="chips" role="group" aria-label="Escolher lote"></div>
     <div id="body"></div>
   </div>
 </div>
 
+<div class="toast" id="toast" role="status"></div>
 <script>
 /* ============ DADOS DE EXEMPLO (Lotes 9245, 9247 e Lote 3) ============ */
-const EMBEDDED = [{"label": "Lote 9245 · 13/09", "rows": [["01.003.42.31.1 P", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "CX 24", 24.0, 9.0, 15.0, 8154.0], ["01.004.104.51.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 23.0, 20.0, 3.0, 556.2], ["01.003.61.1.1 A", 82642, "ESPUMANTE FREIXENET 750ML BRUT PROSSECO-", "UN 1", 24.0, 24.0, 0.0, 0.0], ["01.004.26.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 48.0, 48.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.004.79.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.88.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.93.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.96.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.98.1.1 A", 12067, "FOLHA BOREAL C/500 A4-", "UN 1", 90.0, 90.0, 0.0, 0.0], ["01.004.110.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.058.135.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.143.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.161.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.074.126.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.130.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.131.22.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 80.0, -60.0, -519.0], ["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 114.0, 138.0, -24.0, -2054.4], ["01.055.126.2.1 A", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "UN 1", 24.0, 384.0, -360.0, -8154.0]]}, {"label": "Lote 9247 · 14/09", "rows": [["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 102.0, 0.0, 102.0, 8731.2], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 100.0, 3.0, 228.06], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 20.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.006.42.21.1 P", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "CX 6", 28.0, 28.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.63.1.1 A", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "UN 1", 210.0, 210.0, 0.0, 0.0], ["01.076.123.61.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 36.0, 36.0, 0.0, 0.0], ["01.089.129.71.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 34.0, 34.0, 0.0, 0.0]]}, {"label": "Lote 3", "rows": [["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.005.105.1.1 A", 119887, "VINHO GRILL MASTER 750ML ARG CAB SAUV TTO-", "UN 1", 180.0, 192.0, -12.0, -170.88], ["01.005.108.1.1 A", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "UN 1", 144.0, 144.0, 0.0, 0.0], ["01.005.110.1.1 A", 76405, "VINHO ANJOS 750ML VERDE BCO-", "UN 1", 132.0, 144.0, -12.0, -400.92], ["01.005.40.1.1 A", 112435, "SACOLA DO BEM 60X70CM SUSTENTAVEL ZAFFARI-", "UN 1", 11000.0, 12000.0, -1000.0, -160.0], ["01.005.42.1.1 A", 80336, "BISC BAUDUCCO 100G COOKIES CHOC-", "UN 1", 45.0, 45.0, 0.0, 0.0], ["01.005.72.41.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 16.0, 16.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.005.96.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.006.108.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.006.31.1.1 A", 106290, "MAIONESE LIZA 450G CASEIRA TRAD-", "UN 1", 12.0, 12.0, 0.0, 0.0], ["01.006.32.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.006.45.21.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.47.31.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.49.51.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.62.1.1 A", 67198, "KIT HEINZ KETCHUP 397G +MAION 215G +MOSTAR 255G-", "UN 1", 430.0, 430.0, 0.0, 0.0], ["01.006.82.51.1 P", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "CX 40", 24.0, 23.0, 1.0, 219.6], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 103.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.23.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.24.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.68.31.1 P", 5765, "BISC ZEZE 300G PALITO CHOC-", "CX 15", 18.0, 18.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.011.11.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 24.0, 4.0, 258.88], ["01.012.14.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 45.0, 46.0, -1.0, -121.0], ["01.012.14.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.18.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.012.22.2.3 A", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "UN 1", 200.0, 240.0, -40.0, -219.6], ["01.012.22.31.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 4.0, 4.0, 0.0, 0.0], ["01.012.50.1.1 A", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "UN 1", 280.0, 279.0, 1.0, 12.1], ["01.012.54.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 22.0, 22.0, 0.0, 0.0], ["01.012.60.51.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 26.0, 26.0, 0.0, 0.0], ["01.013.104.1.1 A", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 50.0, 31.0, 19.0, 1229.68], ["01.013.105.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.013.105.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.014.94.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.014.99.61.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.015.88.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.052.138.71.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 12.0, 12.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.055.128.31.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.055.133.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.157.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.060.118.1.1 A", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "UN 1", 156.0, 240.0, -84.0, -1333.92], ["01.063.138.51.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 48.0, 7.0, 41.0, 7812.96]]}];
+const EMBEDDED = [{"id": "9245", "label": "Lote 9245 · 13/09", "date": "2026-09-13", "rows": [["01.003.42.31.1 P", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "CX 24", 24.0, 9.0, 15.0, 8154.0], ["01.004.104.51.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 23.0, 20.0, 3.0, 556.2], ["01.003.61.1.1 A", 82642, "ESPUMANTE FREIXENET 750ML BRUT PROSSECO-", "UN 1", 24.0, 24.0, 0.0, 0.0], ["01.004.26.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 48.0, 48.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.004.79.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.88.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.93.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.96.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.004.98.1.1 A", 12067, "FOLHA BOREAL C/500 A4-", "UN 1", 90.0, 90.0, 0.0, 0.0], ["01.004.110.31.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.058.135.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.143.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.058.161.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.074.126.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.130.21.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.074.131.22.1 P", 12067, "FOLHA BOREAL C/500 A4-", "CX 10", 56.0, 56.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 80.0, -60.0, -519.0], ["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 114.0, 138.0, -24.0, -2054.4], ["01.055.126.2.1 A", 5116, "COMPOSTO LACTEO NINHO 400G CRESCIMENTO 1+-", "UN 1", 24.0, 384.0, -360.0, -8154.0]]}, {"id": "9247", "label": "Lote 9247 · 14/09", "date": "2026-09-14", "rows": [["01.004.24.1.1 A", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "UN 1", 102.0, 0.0, 102.0, 8731.2], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 100.0, 3.0, 228.06], ["01.012.16.41.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.004.43.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.062.184.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 6.0, 6.0, 0.0, 0.0], ["01.008.45.51.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.50.2.1 A", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "UN 1", 20.0, 20.0, 0.0, 0.0], ["01.007.26.21.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 10.0, 10.0, 0.0, 0.0], ["01.061.126.31.1 P", 99185, "RACAO SUPRA 1KG GATOS JAZZ MIX-", "FD 10", 29.0, 29.0, 0.0, 0.0], ["01.006.42.21.1 P", 99598, "VINHO MOSQUITA MUERTA 750ML ARG. BLEND TTO-", "CX 6", 28.0, 28.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.004.63.1.1 A", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "UN 1", 210.0, 210.0, 0.0, 0.0], ["01.076.123.61.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 36.0, 36.0, 0.0, 0.0], ["01.089.129.71.1 P", 120367, "EMBALAGEM TOTALPLAST 750ML C/24 POTE C/TP-", "FD 6", 34.0, 34.0, 0.0, 0.0]]}, {"id": "L3", "label": "Lote 3", "date": "2026-09-15", "rows": [["01.004.76.41.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.004.80.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 136.0, 4.0, 304.08], ["01.005.105.1.1 A", 119887, "VINHO GRILL MASTER 750ML ARG CAB SAUV TTO-", "UN 1", 180.0, 192.0, -12.0, -170.88], ["01.005.108.1.1 A", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "UN 1", 144.0, 144.0, 0.0, 0.0], ["01.005.110.1.1 A", 76405, "VINHO ANJOS 750ML VERDE BCO-", "UN 1", 132.0, 144.0, -12.0, -400.92], ["01.005.40.1.1 A", 112435, "SACOLA DO BEM 60X70CM SUSTENTAVEL ZAFFARI-", "UN 1", 11000.0, 12000.0, -1000.0, -160.0], ["01.005.42.1.1 A", 80336, "BISC BAUDUCCO 100G COOKIES CHOC-", "UN 1", 45.0, 45.0, 0.0, 0.0], ["01.005.72.41.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 16.0, 16.0, 0.0, 0.0], ["01.005.94.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 19.0, 19.0, 0.0, 0.0], ["01.005.96.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.006.108.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.006.31.1.1 A", 106290, "MAIONESE LIZA 450G CASEIRA TRAD-", "UN 1", 12.0, 12.0, 0.0, 0.0], ["01.006.32.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.006.45.21.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.47.31.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.49.51.1 P", 119703, "VINHO CATADOR PIEDRA 750ML CHIL CARM TTO-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.006.62.1.1 A", 67198, "KIT HEINZ KETCHUP 397G +MAION 215G +MOSTAR 255G-", "UN 1", 430.0, 430.0, 0.0, 0.0], ["01.006.82.51.1 P", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "CX 40", 24.0, 23.0, 1.0, 219.6], ["01.008.33.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 103.0, 103.0, 0.0, 0.0], ["01.009.23.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.25.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.009.33.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 116.0, 116.0, 0.0, 0.0], ["01.009.35.31.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.23.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.24.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.010.68.31.1 P", 5765, "BISC ZEZE 300G PALITO CHOC-", "CX 15", 18.0, 18.0, 0.0, 0.0], ["01.010.81.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.010.87.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.011.11.51.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 24.0, 4.0, 258.88], ["01.012.14.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 45.0, 46.0, -1.0, -121.0], ["01.012.14.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.012.18.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 15.0, 15.0, 0.0, 0.0], ["01.012.22.2.3 A", 116207, "PETISCO MONELLO 80G P/GATOS BITES CARNE/BLUEBERRY-", "UN 1", 200.0, 240.0, -40.0, -219.6], ["01.012.22.31.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 4.0, 4.0, 0.0, 0.0], ["01.012.50.1.1 A", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "UN 1", 280.0, 279.0, 1.0, 12.1], ["01.012.54.41.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 22.0, 22.0, 0.0, 0.0], ["01.012.60.51.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 26.0, 26.0, 0.0, 0.0], ["01.013.104.1.1 A", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 50.0, 31.0, 19.0, 1229.68], ["01.013.105.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.013.105.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.014.94.21.1 P", 106614, "RACAO LEROY GRILLE 1KG GATOS CASTRAD CARNE-", "FD 10", 50.0, 50.0, 0.0, 0.0], ["01.014.99.61.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.015.88.51.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.051.129.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.052.138.71.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 12.0, 12.0, 0.0, 0.0], ["01.053.164.1.1 A", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "UN 1", 396.0, 396.0, 0.0, 0.0], ["01.055.128.31.1 P", 122460, "PETISCO PEDIGREE 500G BRISCOCK BANAN/LEIT-", "CX 22", 21.0, 21.0, 0.0, 0.0], ["01.055.133.31.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.157.41.1 P", 118342, "RACAO CHAMP 15KG CAES ADULTOS CARNE/CEREAL-", "UN 1", 28.0, 28.0, 0.0, 0.0], ["01.056.166.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.056.169.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.057.160.21.1 P", 115164, "VINHO LOS COCHES 750ML CHIL MERLOT ROSE-", "CX 6", 140.0, 140.0, 0.0, 0.0], ["01.060.118.1.1 A", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "UN 1", 156.0, 240.0, -84.0, -1333.92], ["01.063.138.51.1 P", 81739, "GRANOLA NATURALE 800G PREM CRAN/FRAM/AMEND-", "CX 12", 48.0, 7.0, 41.0, 7812.96]]}];
 
 /* ============ CONFIG ============ */
 const CRIT = 2000;          // R$ de divergência absoluta a partir do qual o SKU é "crítico"
 const COMP_TOL = 0.05;      // sobra e falta que se anulam: |saldo| <= 5% do bruto
+const RECENT_CHIPS = 8;     // acima disso, o seletor de lote vira lista suspensa
+
+/* Histórico compartilhado: cole aqui o firebaseConfig do projeto (o mesmo dos outros apps do CD-107).
+   Enquanto for null, o histórico fica salvo só neste navegador (localStorage). */
+const FIREBASE_CONFIG = null;
+const FIRESTORE_COLLECTION = 'inventario_sku_lotes';
 
 /* ============ HELPERS ============ */
 const $ = s => document.querySelector(s);
@@ -199,12 +250,21 @@ const fInt = n => Math.round(n).toLocaleString('pt-BR');
 const fNum = n => n.toLocaleString('pt-BR',{maximumFractionDigits:0});
 const fBRL = n => (n<0?'-':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fBRL0 = n => (n<0?'-':'')+'R$ '+Math.abs(Math.round(n)).toLocaleString('pt-BR');
+const fK = n => { const a=Math.abs(n); const s = a>=1000 ? (a/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mil' : String(Math.round(a)); return (n<0?'-':'')+'R$ '+s; };
 const fPct = (x,d=1) => (x*100).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
 const signCls = n => n>0 ? 'pos' : n<0 ? 'neg' : '';
 const clean = s => String(s||'').replace(/-\s*$/,'').trim();
 const factor = emb => { const m = /(\d+)\s*$/.exec(String(emb||'')); return m ? Math.max(1,+m[1]) : 1; };
 const accOf = (ger,abs) => ger>0 ? Math.max(0, 1-abs/ger) : (abs>0 ? 0 : 1);
 const STATUS = {ok:'OK', div:'Divergente', crit:'Crítico', comp:'Compensado'};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pad2 = n => String(n).padStart(2,'0');
+const isoToday = () => { const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+const fDate = iso => { if(!iso||iso==='sem-data') return 'sem data'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+const fDM = iso => { if(!iso||iso==='sem-data') return '–'; const [,m,d]=iso.split('-'); return `${d}/${m}`; };
+const safeId = s => String(s).trim().replace(/[\/\s]+/g,'-');
+let toastTimer;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',4200); }
 
 function parseNum(v){
   if (typeof v === 'number') return v;
@@ -220,6 +280,7 @@ function normRow(a){
   return {end, cod:String(parseNum(a[1])), prod:clean(a[2]), emb, f, tipo:end.slice(-1).toUpperCase()==='A'?'A':'P',
           cont, ger, div, val, gerU:ger*f, divU:div*f};
 }
+const compactRow = r => [r.end, +r.cod, r.prod, r.emb, r.cont, r.ger, r.div, r.val];
 const isAddr = v => /^\d+\.\d+\./.test(String(v||'').trim());
 
 function parseCSV(text){
@@ -231,12 +292,67 @@ function labelFromSheet(name){
   if (!m) return name;
   return 'Lote '+m[1]+(m[2] ? ' · '+m[2].replace(/\./g,'/') : '');
 }
+function idFromSheet(name){ const m=/LOTE\s*(\d+)/i.exec(name); return m ? m[1] : safeId(name); }
+function dateFromSheet(name){
+  const m = /[-–]\s*(\d{1,2})[./](\d{1,2})/.exec(name); if(!m) return null;
+  const now = new Date(); let y = now.getFullYear();
+  const d = new Date(y, +m[2]-1, +m[1]);
+  if (d.getTime() > now.getTime() + 3*864e5) y--;
+  return `${y}-${pad2(+m[2])}-${pad2(+m[1])}`;
+}
+function askDate(label){
+  const r = prompt(`Data do lote "${label}" (dd/mm/aaaa). Deixe vazio para usar hoje.`, '');
+  const m = r && /(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?/.exec(r);
+  if(!m) return isoToday();
+  let y = m[3] ? +m[3] : new Date().getFullYear(); if (y<100) y+=2000;
+  return `${y}-${pad2(+m[2])}-${pad2(+m[1])}`;
+}
+
+/* ============ ARMAZENAMENTO (local ou Firebase) ============ */
+const LS_KEY = 'cd107_inv_sku_hist_v1';
+let memStore = [];
+const Store = {
+  mode:'local', db:null,
+  loadScript(src){ return new Promise((ok,ko)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=()=>ko(new Error('script')); document.head.appendChild(s); }); },
+  async init(){
+    if(!FIREBASE_CONFIG) return;
+    try{
+      const v='10.12.2';
+      await this.loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+      await this.loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
+      const app = firebase.initializeApp(FIREBASE_CONFIG,'inv-sku');
+      this.db = app.firestore(); this.mode='firebase';
+    }catch(e){ toast('Firebase indisponível. Usando o histórico local deste navegador.'); }
+  },
+  async load(){
+    if(this.mode==='firebase'){
+      const snap = await this.db.collection(FIRESTORE_COLLECTION).get();
+      return snap.docs.map(d=>{ const x=d.data(); return {id:x.id,label:x.label,date:x.date,rows:JSON.parse(x.rowsJson||'[]')}; });
+    }
+    try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch(e){ return memStore.slice(); }
+  },
+  async save(lot){   // lot: {id,label,date,rows(compactas)}
+    if(this.mode==='firebase'){
+      await this.db.collection(FIRESTORE_COLLECTION).doc(lot.id).set({id:lot.id,label:lot.label,date:lot.date,rowsJson:JSON.stringify(lot.rows),updatedAt:Date.now()});
+      return;
+    }
+    const all = (await this.load()).filter(l=>l.id!==lot.id); all.push(lot);
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(all)); }catch(e){ memStore = all; }
+  },
+  async remove(id){
+    if(this.mode==='firebase'){ await this.db.collection(FIRESTORE_COLLECTION).doc(id).delete(); return; }
+    const all = (await this.load()).filter(l=>l.id!==id);
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(all)); }catch(e){ memStore = all; }
+  }
+};
 
 /* ============ ESTADO ============ */
-const state = {lots:[], scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp'};
+const state = {view:'sku', lots:[], sample:true, scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp', evoMode:'cum'};
+const hydrate = list => list.map(l=>({id:l.id,label:l.label,date:l.date||null,rows:l.rows.map(normRow)}));
 
 function setLots(defs){
-  state.lots = defs.map(d=>({label:d.label, rows:d.rows}));
+  const byDate = (a,b)=> (a.date||'9999').localeCompare(b.date||'9999') || String(a.id).localeCompare(String(b.id),'pt-BR',{numeric:true});
+  state.lots = [...defs].sort(byDate).map(d=>({id:d.id,label:d.label,date:d.date,rows:d.rows}));
   state.scope='all'; state.open.clear(); state.q=''; state.onlyDiv=false;
   const seen = new Map();
   state.lots.forEach((lot,i)=>{
@@ -246,6 +362,11 @@ function setLots(defs){
       seen.set(k,[...(seen.get(k)||[]),{lotIdx:i,div:r.div,val:r.val}]);
     });
   });
+}
+async function reloadFromStore(){
+  let raw=[]; try{ raw = await Store.load(); }catch(e){ toast('Não consegui ler o histórico: '+e.message); }
+  if(raw.length){ state.sample=false; setLots(hydrate(raw)); }
+  else { state.sample=true; setLots(EMBEDDED.map(l=>({id:l.id,label:l.label,date:l.date,rows:l.rows.map(normRow)}))); }
 }
 function scopeRows(){
   if (state.scope==='all'){
@@ -265,8 +386,7 @@ function analyze(rows){
     let s = skuMap.get(r.cod);
     if(!s){ s = {cod:r.cod,prod:r.prod,rows:[],n:0,nDiv:0,ger:0,abs:0,sobra:0,falta:0,nA:0,nP:0}; skuMap.set(r.cod,s); }
     const isDiv = r.div!==0, ab = Math.abs(r.divU);
-    const targets = [s, T, area[r.tipo]];
-    targets.forEach(t=>{
+    [s, T, area[r.tipo]].forEach(t=>{
       t.n++; t.ger+=r.gerU; t.abs+=ab;
       if(isDiv) t.nDiv++;
       if(r.val>0) t.sobra+=r.val; else if(r.val<0) t.falta+=r.val;
@@ -285,36 +405,111 @@ function analyze(rows){
   return {skus, T, area};
 }
 
-/* ============ RENDER ============ */
+/* evolução por dia (cada dia = última contagem de cada endereço/SKU dentro do dia) */
+function evoData(lots){
+  const groups = new Map();
+  lots.forEach(l=>{ const d=l.date||'sem-data'; if(!groups.has(d)) groups.set(d,[]); groups.get(d).push(l); });
+  const days=[]; const cumSkus=new Set(), cumEnd=new Set(); let cSobra=0,cFalta=0;
+  [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([d,ls])=>{
+    const m = new Map(); ls.forEach(l=>l.out.forEach(r=>m.set(r.end+'|'+r.cod,r)));
+    const rows=[...m.values()], a=analyze(rows);
+    rows.forEach(r=>{ cumSkus.add(r.cod); cumEnd.add(r.end+'|'+r.cod); });
+    cSobra+=a.T.sobra; cFalta+=a.T.falta;
+    days.push({date:d,lotes:ls.length,skus:a.skus.length,skusCum:cumSkus.size,n:a.T.n,nCum:cumEnd.size,nDiv:a.T.nDiv,
+      acc:accOf(a.T.ger,a.T.abs),sobra:a.T.sobra,falta:a.T.falta,abs:a.T.sobra-a.T.falta,saldo:a.T.sobra+a.T.falta,
+      cSobra,cFalta,cAbs:cSobra-cFalta,cSaldo:cSobra+cFalta});
+  });
+  return days;
+}
+
+/* recorrência: SKUs e endereços que divergem em mais de um lote */
+function recurrence(lots){
+  const bySku=new Map(), byKey=new Map();
+  lots.forEach((l,i)=>l.out.forEach(r=>{
+    let s=bySku.get(r.cod);
+    if(!s){ s={cod:r.cod,prod:r.prod,per:new Array(lots.length).fill(null),abs:0,saldo:0}; bySku.set(r.cod,s); }
+    const c = s.per[i] || (s.per[i]={n:0,nDiv:0,val:0,abs:0});
+    c.n++; if(r.div!==0){ c.nDiv++; c.val+=r.val; c.abs+=Math.abs(r.val); s.abs+=Math.abs(r.val); s.saldo+=r.val;
+      const k=r.end+'|'+r.cod; let e=byKey.get(k);
+      if(!e){ e={end:r.end,cod:r.cod,prod:r.prod,emb:r.emb,ev:[]}; byKey.set(k,e); }
+      e.ev.push({i,div:r.div,val:r.val});
+    }
+  }));
+  const skus=[...bySku.values()];
+  skus.forEach(s=>{ s.audited=s.per.filter(Boolean).length; s.divLotes=s.per.filter(c=>c&&c.nDiv>0).length; });
+  const rec = skus.filter(s=>s.divLotes>=2).sort((a,b)=>b.divLotes-a.divLotes||b.abs-a.abs);
+  const addrs = [...byKey.values()].filter(e=>e.ev.length>=2).sort((a,b)=>b.ev.length-a.ev.length||Math.abs(b.ev[0].val)-Math.abs(a.ev[0].val));
+  return {skus,rec,addrs};
+}
+
+/* ============ GRÁFICO SVG (cores resolvidas para funcionar na exportação PNG) ============ */
+function svgChart(labels, series, fmt){
+  const n=labels.length, slot=58, W=Math.max(420,n*slot+24), H=210, pt=26, pb=34;
+  const sums = labels.map((_,i)=>({p:series.reduce((a,s)=>a+Math.max(0,s.vals[i]),0), q:series.reduce((a,s)=>a+Math.max(0,-s.vals[i]),0)}));
+  const maxP=Math.max(1,...sums.map(s=>s.p)), maxN=Math.max(0,...sums.map(s=>s.q));
+  const scale=(H-pt-pb)/(maxP+maxN), y0=pt+maxP*scale, muted=css('--muted'), line=css('--line'), ink=css('--ink');
+  let g=`<line x1="8" x2="${W-8}" y1="${y0}" y2="${y0}" stroke="${muted}" stroke-width="1"/>`;
+  labels.forEach((lb,i)=>{
+    const cx=12+i*slot+slot/2, bw=Math.min(34,slot-20); let up=y0, dn=y0;
+    series.forEach(s=>{
+      const v=s.vals[i]; if(!v) return; const h=Math.abs(v)*scale;
+      if(v>0){ up-=h; g+=`<rect x="${cx-bw/2}" y="${up}" width="${bw}" height="${Math.max(1,h)}" rx="3" fill="${s.color}"/>`; }
+      else { g+=`<rect x="${cx-bw/2}" y="${dn}" width="${bw}" height="${Math.max(1,h)}" rx="3" fill="${s.color}"/>`; dn+=h; }
+    });
+    if(sums[i].p>0) g+=`<text x="${cx}" y="${up-5}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${ink}" font-family="Inter,Arial,sans-serif">${fmt(sums[i].p)}</text>`;
+    if(sums[i].q>0) g+=`<text x="${cx}" y="${dn+12}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${ink}" font-family="Inter,Arial,sans-serif">${fmt(-sums[i].q)}</text>`;
+    g+=`<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="11" fill="${muted}" font-family="Inter,Arial,sans-serif">${esc(lb)}</text>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+
+/* ============ RENDER: dispatcher ============ */
 function render(){
-  renderChips();
+  renderTabs(); renderChips();
+  if(state.view==='evo') renderEvo(); else renderSku();
+}
+function renderTabs(){
+  const t=$('#tabs');
+  t.innerHTML = `<button type="button" class="tab" data-v="sku" aria-pressed="${state.view==='sku'}">Inventário por SKU</button>
+                 <button type="button" class="tab" data-v="evo" aria-pressed="${state.view==='evo'}">Evolução e recorrência</button>`;
+  t.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.v; render(); window.scrollTo({top:0}); }));
+}
+function renderChips(){
+  const c = $('#chips');
+  if(state.view!=='sku'){ c.innerHTML=''; c.style.display='none'; return; }
+  c.style.display='';
+  if(state.lots.length>RECENT_CHIPS){
+    c.innerHTML = `<select id="scopeSel" aria-label="Escolher lote"><option value="all">Consolidado (última contagem)</option>${state.lots.map((l,i)=>`<option value="${i}">${esc(l.label)}</option>`).join('')}</select>`;
+    $('#scopeSel').value = String(state.scope);
+    $('#scopeSel').addEventListener('change',e=>{ state.scope=e.target.value==='all'?'all':+e.target.value; state.open.clear(); render(); });
+    return;
+  }
+  c.innerHTML = `<button type="button" class="chip" aria-pressed="${state.scope==='all'}" data-s="all">Consolidado<small>última contagem</small></button>`
+    + state.lots.map((l,i)=>`<button type="button" class="chip" aria-pressed="${state.scope===i}" data-s="${i}">${esc(l.label)}</button>`).join('');
+  c.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.scope=b.dataset.s==='all'?'all':+b.dataset.s; state.open.clear(); render(); }));
+}
+
+/* ============ RENDER: visão por SKU ============ */
+function renderSku(){
   const rows = scopeRows();
   const box = $('#body');
   if(!rows.length){ box.innerHTML = '<div class="panel empty">Nenhum dado carregado. Use “Carregar planilha” com o arquivo do inventário rotativo.</div>'; $('#sub').textContent=''; return; }
-  const A = analyze(rows);
-  const {skus,T,area} = A;
+  const {skus,T,area} = analyze(rows);
   const okSkus = skus.filter(s=>s.status==='ok').length;
   const accQ = accOf(T.ger,T.abs);
   const gross = T.sobra - T.falta, saldo = T.sobra + T.falta;
   const scopeName = state.scope==='all' ? 'Consolidado' : state.lots[state.scope].label;
-  const today = new Date().toLocaleDateString('pt-BR');
-  $('#sub').textContent = `${scopeName} · ${skus.length} SKUs · ${T.n} endereços · emitido em ${today}`;
+  $('#sub').textContent = `${scopeName} · ${skus.length} SKUs · ${T.n} endereços · emitido em ${new Date().toLocaleDateString('pt-BR')}`;
 
   const order = {crit:0,div:1,comp:2,ok:3};
   const tiles = [...skus].sort((a,b)=>order[a.status]-order[b.status] || b.gross-a.gross || a.cod-b.cod).map(s=>{
-    const ft = s.status==='ok' ? 'Sem divergência'
-      : s.status==='comp' ? `Compensa ±${fBRL0(s.sobra)}`
-      : `${fBRL0(s.saldo)}`;
+    const ft = s.status==='ok' ? 'Sem divergência' : s.status==='comp' ? `Compensa ±${fBRL0(s.sobra)}` : `${fBRL0(s.saldo)}`;
     return `<button type="button" class="tile ${s.status}" data-cod="${s.cod}" title="${esc(s.prod)}">
       <span class="cod num">${s.cod}</span><span class="nm">${esc(s.prod)}</span><span class="ft">${ft}</span></button>`;
   }).join('');
-
-  const nOk = skus.filter(s=>s.status==='ok').length, nDv = skus.filter(s=>s.status==='div').length,
-        nCr = skus.filter(s=>s.status==='crit').length, nCp = skus.filter(s=>s.status==='comp').length;
-
+  const cnt = k => skus.filter(s=>s.status===k).length;
   const fShare = gross>0 ? (-T.falta/gross*100) : 50, sShare = gross>0 ? (T.sobra/gross*100) : 50;
 
-  // pontos de atenção
   const notes = [];
   const byGross = skus.filter(s=>s.gross>0).sort((a,b)=>b.gross-a.gross);
   if (gross>0 && byGross.length>=3){
@@ -330,7 +525,8 @@ function render(){
   if (reinc.length) notes.push(`<b>Divergência repetida sem ajuste:</b> ${reinc.map(r=>`${esc(r.end)} (${esc(r.prod)}, ${r.div>0?'+':''}${fNum(r.div)} ${esc(r.emb.split(' ')[0])})`).join('; ')}.`);
 
   box.innerHTML = `
-  <section class="hero">
+  ${state.sample ? '<div class="banner noexp">Dados de exemplo. Use “Carregar planilha” para montar o histórico real.</div>' : ''}
+  <section class="hero" style="margin-top:12px">
     <div class="ledger">
       <div class="lbl">Acurácia quantitativa</div>
       <div class="big">${fPct(accQ,2)}</div>
@@ -345,7 +541,7 @@ function render(){
     <div class="map">
       <h2>O que foi auditado, SKU por SKU</h2>
       <p class="hint">Cada quadro é um SKU da amostra. Clique para ver os endereços na tabela.</p>
-      <div class="legend"><span class="l-ok">OK (${nOk})</span><span class="l-div">Divergente (${nDv})</span><span class="l-crit">Crítico ≥ ${fBRL0(CRIT)} (${nCr})</span><span class="l-comp">Compensado (${nCp})</span></div>
+      <div class="legend"><span class="l-ok">OK (${cnt('ok')})</span><span class="l-div">Divergente (${cnt('div')})</span><span class="l-crit">Crítico ≥ ${fBRL0(CRIT)} (${cnt('crit')})</span><span class="l-comp">Compensado (${cnt('comp')})</span></div>
       <div class="tiles">${tiles}</div>
     </div>
   </section>
@@ -386,11 +582,11 @@ function render(){
       </table>
     </section>
     <section class="panel mini">
-      <h2>Lotes da amostra</h2>
-      <table>
+      <h2>Lotes</h2>
+      <div class="tw" style="max-height:230px;overflow-y:auto"><table>
         <thead><tr><th>Lote</th><th>Endereços</th><th>100% OK</th><th>Acur. qtd.</th><th>Saldo R$</th></tr></thead>
         <tbody>${state.lots.map((l,i)=>{const t=analyze(l.out).T; return `<tr class="lote ${state.scope===i?'cur':''}" data-lote="${i}"><td>${esc(l.label)}</td><td class="num">${t.n}</td><td class="num">${fPct(1-t.nDiv/t.n)}</td><td class="num">${fPct(accOf(t.ger,t.abs))}</td><td class="num ${signCls(t.sobra+t.falta)}">${fBRL0(t.sobra+t.falta)}</td></tr>`}).join('')}</tbody>
-      </table>
+      </table></div>
     </section>
   </div>
 
@@ -402,7 +598,7 @@ function render(){
 
   $('#sort').value = state.sort;
   renderTable(skus);
-  bind(skus);
+  bindSku(skus);
 }
 
 function renderTable(skus){
@@ -428,7 +624,7 @@ function renderTable(skus){
         <td class="num ${signCls(r.val)}">${r.val?fBRL(r.val):'–'}</td><td>${esc(state.lots[r.lotIdx].label)}</td>
         <td class="tag">${rep?'divergência repetida':prev?'já divergiu em lote anterior':''}</td></tr>`;}).join('')}
       </tbody></table></td></tr>` : '';
-    return `<tr class="sku ${open?'open':''} " data-cod="${s.cod}" id="sku-${s.cod}" tabindex="0" aria-expanded="${open}">
+    return `<tr class="sku ${open?'open':''}" data-cod="${s.cod}" id="sku-${s.cod}" tabindex="0" aria-expanded="${open}">
       <td><span class="skuname"><span class="chev">▸</span>${esc(s.prod)}</span><span class="skucod num" style="margin-left:14px">${s.cod}</span></td>
       <td class="num">${s.n}${s.nDiv?` <span class="tag">(${s.nDiv} div.)</span>`:''}<br><span class="skucod">${s.nP} pulmão · ${s.nA} apanha</span></td>
       <td class="num">${fInt(s.ger)}</td>
@@ -444,8 +640,7 @@ function renderTable(skus){
     tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
   });
 }
-
-function bind(skus){
+function bindSku(skus){
   document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
     state.open.add(t.dataset.cod); state.q=''; $('#q').value=''; renderTable(skus);
     const el=document.getElementById('sku-'+t.dataset.cod);
@@ -457,19 +652,107 @@ function bind(skus){
   document.querySelectorAll('tr.lote').forEach(tr=>tr.addEventListener('click',()=>{ state.scope=+tr.dataset.lote; state.open.clear(); render(); }));
 }
 
-function renderChips(){
-  const c = $('#chips');
-  const all = `<button type="button" class="chip" aria-pressed="${state.scope==='all'}" data-s="all">Consolidado<small>última contagem</small></button>`;
-  c.innerHTML = all + state.lots.map((l,i)=>`<button type="button" class="chip" aria-pressed="${state.scope===i}" data-s="${i}">${esc(l.label)}</button>`).join('');
-  c.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.scope=b.dataset.s==='all'?'all':+b.dataset.s; state.open.clear(); render(); }));
+/* ============ RENDER: evolução e recorrência ============ */
+function renderEvo(){
+  const box=$('#body'), lots=state.lots;
+  if(!lots.length){ box.innerHTML='<div class="panel empty">Sem lotes no histórico ainda.</div>'; return; }
+  const days = evoData(lots), R = recurrence(lots), cum = state.evoMode==='cum';
+  const last = days[days.length-1];
+  $('#sub').textContent = `${lots.length} lotes · ${days.length} dia(s) · ${fDate(days[0].date)} a ${fDate(last.date)}`;
+
+  const labels = days.map(d=>fDM(d.date));
+  const skuSeries = [{vals:days.map(d=>cum?d.skusCum:d.skus), color:css('--navy2')||'#16265A'}];
+  const finSeries = [{vals:days.map(d=>cum?d.cSobra:d.sobra), color:css('--ok')},{vals:days.map(d=>cum?d.cFalta:d.falta), color:css('--bad')}];
+  const skuChart = svgChart(labels, [{vals:skuSeries[0].vals,color:'#3556B5'}], v=>fInt(v));
+  const finChart = svgChart(labels, finSeries, fK);
+
+  const d = (cur,prev,f)=> prev===undefined ? '' : (cur-prev>0 ? `<span class="delta up">+${f(cur-prev)}</span>` : cur-prev<0 ? `<span class="delta">${f(cur-prev)}</span>` : '<span class="delta">=</span>');
+  const trs = days.map((x,i)=>{ const p=days[i-1]; return `<tr>
+    <td>${fDate(x.date)}</td><td class="num">${x.lotes}</td>
+    <td class="num">${fInt(x.skus)}</td>
+    <td class="num">${fInt(x.skusCum)}${d(x.skusCum,p?.skusCum,fInt)}</td>
+    <td class="num">${fInt(x.n)}<span class="delta">${x.nDiv} div.</span></td>
+    <td class="num">${fPct(x.acc)}</td>
+    <td class="num">${fBRL0(x.abs)}</td>
+    <td class="num">${fBRL0(x.cAbs)}${d(x.cAbs,p?.cAbs,fBRL0)}</td>
+    <td class="num ${signCls(x.cSaldo)}">${fBRL0(x.cSaldo)}</td></tr>`; }).join('');
+
+  // matriz de recorrência
+  const shown = R.rec.slice(0,25);
+  const head = lots.map(l=>`<th title="${esc(l.label)}">${fDM(l.date)}<br><span style="color:var(--muted);font-weight:400">${esc(String(l.id).slice(0,6))}</span></th>`).join('');
+  const body = shown.map(s=>`<tr><td><span class="skuname">${esc(s.prod)}</span><span class="skucod num">${s.cod}</span></td>
+    ${s.per.map((c,i)=>{ const cls=!c?'none':c.nDiv===0?'ok':(c.abs>=CRIT?'crit':'div'); const tip=!c?'não auditado':`${c.nDiv} de ${c.n} endereço(s) divergente(s)${c.nDiv?', '+fBRL(c.val):''}`;
+      return `<td><span class="mc ${cls}" title="${esc(lots[i].label+': '+tip)}"></span></td>`; }).join('')}
+    <td class="sum num">${s.divLotes} de ${s.audited} lotes<span class="delta">${fBRL0(s.abs)} abs.</span></td></tr>`).join('');
+  const addrRows = R.addrs.slice(0,30).map(e=>{
+    const same = e.ev.every(x=>x.div===e.ev[0].div && x.val===e.ev[0].val);
+    return `<tr><td class="num" style="text-align:left">${esc(e.end)}</td><td style="text-align:left">${esc(e.prod)}</td>
+      <td style="text-align:left">${e.ev.map(x=>`${esc(lots[x.i].label)}: ${x.div>0?'+':''}${fNum(x.div)} (${fBRL0(x.val)})`).join('<br>')}</td>
+      <td class="tag" style="text-align:left">${same?'igual em todos os lotes, sem ajuste':'mudou entre os lotes'}</td></tr>`; }).join('');
+
+  const histRows = [...lots].reverse().map(l=>`<tr><td>${esc(l.label)}</td><td>${fDate(l.date)}</td><td class="num">${l.rows.length}</td>
+    <td style="text-align:right">${state.sample?'':`<button class="btn2 del" type="button" data-del="${esc(l.id)}">Excluir</button>`}</td></tr>`).join('');
+
+  box.innerHTML = `
+  ${state.sample ? '<div class="banner noexp">Dados de exemplo (as datas do exemplo são ilustrativas). O histórico real começa quando você carrega as planilhas.</div>' : ''}
+  <div class="kstrip">
+    <div><div class="k">SKUs auditados (acumulado)</div><div class="v">${fInt(last.skusCum)}</div><small>${fInt(last.skus)} no último dia</small></div>
+    <div><div class="k">Divergência absoluta acumulada</div><div class="v">${fBRL0(last.cAbs)}</div><small>saldo ${fBRL0(last.cSaldo)}</small></div>
+    <div><div class="k">SKUs recorrentes</div><div class="v">${R.rec.length}</div><small>divergiram em 2+ lotes</small></div>
+    <div><div class="k">Endereços recorrentes</div><div class="v">${R.addrs.length}</div><small>divergiram em 2+ lotes</small></div>
+  </div>
+
+  <section class="panel">
+    <div class="head"><div><h2>Evolução dia a dia</h2><p class="hint">${cum?'Acumulado desde o primeiro lote':'Somente o que foi auditado em cada dia'}. O dia usa a última contagem de cada endereço.</p></div>
+      <div class="seg noexp" role="group" aria-label="Modo"><button type="button" data-m="cum" aria-pressed="${cum}">Acumulado</button><button type="button" data-m="dia" aria-pressed="${!cum}">Por dia</button></div></div>
+    <div class="charts">
+      <div><h3>SKUs auditados${cum?' (acumulado)':''}</h3><div class="tw">${skuChart}</div></div>
+      <div><h3>Divergência R$: sobra acima, falta abaixo${cum?' (acumulado)':''}</h3><div class="tw">${finChart}</div></div>
+    </div>
+    <div class="tw"><table class="evo"><thead><tr><th>Data</th><th>Lotes</th><th>SKUs no dia</th><th>SKUs acumulado</th><th>Endereços</th><th>Acur. qtd.</th><th>Diverg. R$ no dia</th><th>Diverg. R$ acumulada</th><th>Saldo acumulado</th></tr></thead><tbody>${trs}</tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Itens com recorrência</h2>
+    <p class="hint">SKUs que divergiram em mais de um lote. Cada quadrado é um lote: vermelho crítico, laranja divergente, verde OK, tracejado não auditado.</p>
+    ${shown.length ? `<div class="tw"><table class="matrix"><thead><tr><th>SKU</th>${head}<th style="text-align:right">Recorrência</th></tr></thead><tbody>${body}</tbody></table></div>
+      ${R.rec.length>shown.length?`<p class="hint" style="margin-top:8px">Mostrando 25 de ${R.rec.length} SKUs.</p>`:''}`
+      : '<div class="empty">Nenhum SKU divergiu em mais de um lote até agora.</div>'}
+    ${R.addrs.length ? `<h2 style="margin-top:20px">Endereços que voltaram a divergir</h2>
+      <div class="tw"><table style="min-width:640px"><thead><tr><th>Endereço</th><th>SKU</th><th>Ocorrências</th><th>Situação</th></tr></thead><tbody>${addrRows}</tbody></table></div>` : ''}
+  </section>
+
+  <section class="panel noexp hist">
+    <div class="head"><div><h2>Histórico salvo</h2>
+      <p class="hint">${Store.mode==='firebase'?'Salvo no Firebase e compartilhado com a equipe.':'Salvo somente neste navegador. Para compartilhar com a equipe, preencha FIREBASE_CONFIG no início do script.'}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn2" type="button" id="btnExpJson">Exportar backup</button><button class="btn2" type="button" id="btnImpJson">Importar backup</button></div></div>
+    <div class="tw" style="max-height:260px;overflow-y:auto"><table style="min-width:420px"><thead><tr><th>Lote</th><th>Data</th><th>Linhas</th><th></th></tr></thead><tbody>${histRows}</tbody></table></div>
+  </section>
+
+  <div class="foot noexp">
+    <span>Acumulado soma o que cada dia encontrou. Se o mesmo endereço continua divergente em dias seguidos, ele volta a somar, e aparece em “Endereços que voltaram a divergir”.</span>
+  </div>`;
+
+  box.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{ state.evoMode=b.dataset.m; renderEvo(); }));
+  box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{
+    if(!confirm('Excluir este lote do histórico?')) return;
+    try{ await Store.remove(b.dataset.del); await reloadFromStore(); render(); toast('Lote excluído.'); }catch(e){ toast('Falha ao excluir: '+e.message); }
+  }));
+  const ej=$('#btnExpJson'); if(ej) ej.addEventListener('click',exportJson);
+  const ij=$('#btnImpJson'); if(ij) ij.addEventListener('click',()=>$('#fileJson').click());
 }
 
 /* ============ CARREGAR / EXPORTAR ============ */
-function loadEmbedded(){
-  setLots(EMBEDDED.map(l=>({label:l.label, rows:l.rows.map(normRow)})));
-  render();
+async function saveDefs(defs){
+  let ok=0;
+  for(const d of defs){
+    try{ await Store.save({id:d.id,label:d.label,date:d.date,rows:d.rows.map(compactRow)}); ok++; }
+    catch(e){ toast('Falha ao salvar '+d.label+': '+e.message); }
+  }
+  await reloadFromStore(); render();
+  if(ok) toast(`${ok} lote(s) salvo(s) no histórico.`);
 }
-$('#btnReset').addEventListener('click', loadEmbedded);
+$('#btnReset').addEventListener('click', ()=>{ state.sample=true; setLots(EMBEDDED.map(l=>({id:l.id,label:l.label,date:l.date,rows:l.rows.map(normRow)}))); render(); toast('Mostrando dados de exemplo. Nada foi apagado do histórico.'); });
 $('#lblFile').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#file').click(); } });
 $('#file').addEventListener('change', async e=>{
   const files=[...e.target.files]; if(!files.length) return;
@@ -481,16 +764,31 @@ $('#file').addEventListener('change', async e=>{
         wb.SheetNames.forEach(n=>{
           const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});
           const rows = aoa.filter(r=>isAddr(r[0])).map(normRow);
-          if(rows.length) defs.push({label:labelFromSheet(n), rows});
+          if(rows.length) defs.push({id:idFromSheet(n), label:labelFromSheet(n), date:dateFromSheet(n)||askDate(n), rows});
         });
       } else {
-        const rows = parseCSV(await f.text());
-        if(rows.length) defs.push({label:f.name.replace(/\.[^.]+$/,''), rows});
+        const rows = parseCSV(await f.text()), base=f.name.replace(/\.[^.]+$/,'');
+        if(rows.length) defs.push({id:safeId(base), label:base, date:askDate(base), rows});
       }
     }
   }catch(err){ alert('Não consegui ler o arquivo: '+err.message); return; }
+  e.target.value='';
   if(!defs.length){ alert('Nenhuma linha de endereço encontrada. Confira se as colunas seguem o padrão: Endereço; Código; Produto; Embalagem; Qtde CONTAGEM 1; Qtde GERADA; Divergência; Valor Divergência.'); return; }
-  setLots(defs); render(); e.target.value='';
+  state.view='sku'; await saveDefs(defs);
+});
+async function exportJson(){
+  const raw = await Store.load();
+  const blob = new Blob([JSON.stringify(raw)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='inventario_sku_historico_'+isoToday()+'.json'; a.click();
+}
+$('#fileJson').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const list = JSON.parse(await f.text());
+    if(!Array.isArray(list) || !list.every(l=>l.id && Array.isArray(l.rows))) throw new Error('arquivo fora do formato');
+    await saveDefs(hydrate(list));
+  }catch(err){ alert('Backup inválido: '+err.message); }
+  e.target.value='';
 });
 $('#btnPng').addEventListener('click', async ()=>{
   const el = $('#report');
@@ -498,12 +796,17 @@ $('#btnPng').addEventListener('click', async ()=>{
   try{
     const canvas = await html2canvas(el,{scale:2,backgroundColor:getComputedStyle(document.body).backgroundColor,useCORS:true});
     const a=document.createElement('a'); a.href=canvas.toDataURL('image/png');
-    a.download='inventario_por_sku_'+new Date().toISOString().slice(0,10)+'.png'; a.click();
+    a.download=(state.view==='evo'?'inventario_sku_evolucao_':'inventario_por_sku_')+isoToday()+'.png'; a.click();
   }catch(err){ alert('Falha ao gerar imagem: '+err.message); }
   el.classList.remove('exporting');
 });
+try{ window.matchMedia?.('(prefers-color-scheme: dark)')?.addEventListener?.('change',()=>render()); }catch(e){}
 
-loadEmbedded();
+(async function init(){
+  await Store.init();
+  await reloadFromStore();
+  render();
+})();
 </script>
 </body>
 </html>
