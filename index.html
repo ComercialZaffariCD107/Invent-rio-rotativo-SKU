@@ -147,6 +147,15 @@ tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
 .foot{margin:14px 2px 0;color:var(--muted);font-size:11.5px;display:grid;gap:3px}
 .empty{padding:26px;text-align:center;color:var(--muted)}
 .exporting .noexp{display:none!important}
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  .noexp{display:none!important}
+  :root{padding:0}
+  html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:none;padding:0}
+  .hero,.panel,.note,.top{break-inside:avoid}
+  .notes{margin-top:10px}
+}
 
 @media (max-width:860px){
   .hero,.two,.fin{grid-template-columns:1fr}
@@ -354,7 +363,7 @@ function render(){
 
   ${notes.length ? `<div class="notes">${notes.map(n=>`<div class="note">${n}</div>`).join('')}</div>` : ''}
 
-  <section class="panel" id="secTable">
+  <section class="panel noexp" id="secTable">
     <h2>Resultado por SKU</h2>
     <div class="tools noexp">
       <input type="search" id="q" placeholder="Buscar código ou produto" value="${esc(state.q)}" aria-label="Buscar SKU">
@@ -368,7 +377,7 @@ function render(){
     <div class="tw" id="tbl"></div>
   </section>
 
-  <div class="two">
+  <div class="two noexp">
     <section class="panel mini">
       <h2>Apanha × Pulmão</h2>
       <table>
@@ -385,7 +394,7 @@ function render(){
     </section>
   </div>
 
-  <div class="foot">
+  <div class="foot noexp">
     <span>Quantidades convertidas em unidades pela embalagem (CX 6 = 6 un.). Valores de divergência vêm da planilha do lote.</span>
     <span>Consolidado usa a última contagem de cada endereço/SKU; ao escolher um lote, vale só a Contagem 1 daquele lote.</span>
     <span>Compensado: sobra e falta do mesmo SKU se anulam (saldo até ${COMP_TOL*100}% do bruto). Acurácia financeira não entra porque a planilha só traz valor nas linhas com divergência.</span>
