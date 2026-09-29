@@ -245,6 +245,47 @@ tr.det td{background:var(--detbg);padding:6px 8px 14px 30px}
   .notes{margin-top:10px}
 }
 
+/* ============ ACURACIDADE DE SKUs (relatório no molde "Acuracidade de Ruas") ============ */
+#accReport{display:grid;gap:16px;margin-top:12px;padding:4px 0 8px}
+.ah{background:linear-gradient(120deg,var(--navy),var(--navy2));color:#fff;border-radius:14px;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ah h1{margin:0;font:600 30px/1.1 Oswald,Inter,sans-serif;letter-spacing:.01em;text-transform:uppercase}
+.ah .sub{margin-top:6px;color:#C9D2EC;font-size:14px}
+.ah .acts{display:flex;gap:8px;flex-wrap:wrap}
+.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.kc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.kc .k{font:600 12.5px/1.2 Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.kc .v{font:700 34px/1.1 Inter,sans-serif;margin-top:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.kc .s{font-size:12px;color:var(--muted);margin-top:4px}
+.kc .v.g,.g{color:var(--ok)} .kc .v.r,.r{color:var(--bad)}
+.ablock{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.ablock h2,.acomp-h{margin:0 0 12px;font:600 20px/1.2 Oswald,Inter,sans-serif;text-transform:uppercase;letter-spacing:.01em;color:var(--ink)}
+.acomp-h{margin:4px 0 0 4px}
+.ablock .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+table.at{min-width:980px;font-size:13px}
+table.at thead th{background:var(--navy);color:#fff;font:600 12px/1.25 Inter,sans-serif;text-align:center;padding:9px 8px;border:0;border-right:1px solid #2B3A70}
+table.at thead th:first-child{border-radius:8px 0 0 0;text-align:left;padding-left:12px}
+table.at thead th:last-child{border-radius:0 8px 0 0;border-right:0}
+table.at td{text-align:center;padding:10px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.at td:last-child{border-right:0}
+table.at td:first-child{text-align:left;padding-left:12px}
+table.at tr.tot td{background:var(--detbg);font-weight:700}
+table.at tr.agg td{color:var(--muted);font-style:italic}
+table.at .pn{font-size:12.5px;line-height:1.25;display:block;max-width:300px}
+table.at .pc{font-size:11px;color:var(--muted);font-family:"JetBrains Mono",ui-monospace,monospace}
+table.at .np{font-size:11px;color:var(--warn)}
+.acomp{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cc{border-radius:12px;padding:16px 20px;border:1px solid transparent}
+.cc h3{margin:0 0 10px;font:600 20px/1.2 Oswald,Inter,sans-serif;text-transform:uppercase}
+.cc dl{margin:0;display:grid;grid-template-columns:1fr 1fr;row-gap:10px;font-size:15px}
+.cc dt{font-weight:600} .cc dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.cc.gain{background:var(--okbg)} .cc.gain h3{color:var(--ok)}
+.cc.loss,.cc.net.neg{background:var(--badbg)} .cc.loss h3,.cc.net.neg h3,.cc.net.neg dl{color:var(--bad)}
+.cc.net.pos{background:var(--okbg)} .cc.net.pos h3,.cc.net.pos dl{color:var(--ok)}
+.cc.net.zero{background:var(--panel);border-color:var(--line)}
+.anote{font-size:11.5px;color:var(--muted);margin:0 4px;line-height:1.5}
+.exporting #accReport{width:1240px;padding:18px;background:var(--bg)}
+@media (max-width:860px){.kgrid,.acomp{grid-template-columns:1fr}.ah h1{font-size:22px}.kc .v{font-size:28px}}
+
 @media (max-width:860px){
   .hero,.two,.fin{grid-template-columns:1fr}
   .fin .cell.right{text-align:left}
@@ -417,13 +458,14 @@ const Store = {
 };
 
 /* ============ ESTADO ============ */
-const state = {view:'sku', month:null, lots:[], sample:true, scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp', evoMode:'cum', staged:[]};
+const state = {view:'sku', month:null, lots:[], sample:true, scope:'all', open:new Set(), q:'', onlyDiv:false, sort:'imp', evoMode:'cum', staged:[], accAll:false, price:new Map()};
 const hydrate = list => list.map(l=>({id:l.id,label:l.label,date:l.date||null,rows:l.rows.map(normRow)}));
 
 function setLots(defs){
   const byDate = (a,b)=> (a.date||'9999').localeCompare(b.date||'9999') || String(a.id).localeCompare(String(b.id),'pt-BR',{numeric:true});
   state.lots = [...defs].sort(byDate).map(d=>({id:d.id,label:d.label,date:d.date,rows:d.rows}));
   state.scope='all'; state.open.clear(); state.q=''; state.onlyDiv=false;
+  state.price = priceMap(state.lots);
   const seen = new Map();
   state.lots.forEach((lot,i)=>{
     lot.gi = i;
@@ -484,6 +526,36 @@ function analyze(rows){
     else s.status='div';
   });
   return {skus, T, area};
+}
+
+/* preço unitário implícito de cada SKU: |Valor Divergência| ÷ |Divergência em unidades|.
+   A planilha só traz valor nas linhas divergentes, então o preço vem da divergência mais recente do SKU em todo o histórico. */
+function priceMap(lots){
+  const m = new Map();
+  lots.forEach(l=>l.rows.forEach(r=>{ if(r.divU && r.val) m.set(r.cod, Math.abs(r.val)/Math.abs(r.divU)); }));
+  return m;
+}
+
+/* acuracidade financeira + quantitativa, por área (apanha/pulmão), no total e por SKU */
+function accAnalyze(rows){
+  const P = state.price;
+  const mk = () => ({n:0,nDiv:0,aud:0,dv:0,ger:0,qd:0,sQ:0,fQ:0,sV:0,fV:0,sk:new Set(),skD:new Set(),skS:new Set(),skF:new Set(),noP:new Set()});
+  const area = {A:mk(), P:mk()}, T = mk(), S = new Map();
+  rows.forEach(r=>{
+    let s = S.get(r.cod); if(!s){ s = Object.assign(mk(),{cod:r.cod,prod:r.prod}); S.set(r.cod,s); }
+    const p = P.get(r.cod), aud = p===undefined ? 0 : r.gerU*p;
+    [T, area[r.tipo], s].forEach(t=>{
+      t.n++; t.ger+=r.gerU; t.qd+=Math.abs(r.divU); t.aud+=aud; t.dv+=Math.abs(r.val);
+      t.sk.add(r.cod); if(r.div!==0){ t.nDiv++; t.skD.add(r.cod); }
+      if(r.divU>0) t.sQ+=r.divU; else if(r.divU<0) t.fQ-=r.divU;
+      if(r.val>0){ t.sV+=r.val; t.skS.add(r.cod); } else if(r.val<0){ t.fV-=r.val; t.skF.add(r.cod); }
+      if(p===undefined) t.noP.add(r.cod);
+    });
+  });
+  const fin = t => { t.sem = t.aud - t.dv; t.accF = t.aud>0 ? accOf(t.aud,t.dv) : null; t.accQ = accOf(t.ger,t.qd); return t; };
+  [T, area.A, area.P].forEach(fin);
+  const skus = [...S.values()].map(fin);
+  return {T, area, skus};
 }
 
 /* evolução por dia (cada dia = última contagem de cada endereço/SKU dentro do dia) */
@@ -547,7 +619,7 @@ function svgChart(labels, series, fmt){
 /* ============ RENDER: dispatcher ============ */
 function render(){
   renderMonthTabs(); renderTabs(); renderSide();
-  if(state.view==='evo') renderEvo(); else renderSku();
+  if(state.view==='evo') renderEvo(); else if(state.view==='acc') renderAcc(); else renderSku();
 }
 function renderMonthTabs(){
   const m=$('#mtabs'), ms=monthList();
@@ -559,6 +631,7 @@ function renderMonthTabs(){
 function renderTabs(){
   const t=$('#tabs');
   t.innerHTML = `<button type="button" class="tab" data-v="sku" aria-pressed="${state.view==='sku'}">Inventário por SKU</button>
+                 <button type="button" class="tab" data-v="acc" aria-pressed="${state.view==='acc'}">Acuracidade de SKUs</button>
                  <button type="button" class="tab" data-v="evo" aria-pressed="${state.view==='evo'}">Evolução e recorrência</button>`;
   t.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.v; render(); }));
 }
@@ -567,11 +640,11 @@ function renderSide(){
   $('#listTitle').textContent = state.month==='all' ? 'Todos os lotes' : 'Lotes de '+monthLong(state.month);
   const nDivOf = l => l.out.filter(r=>r.div!==0).length;
   $('#lotList').innerHTML = ml.length
-    ? `<button type="button" class="li all ${state.scope==='all'&&state.view==='sku'?'cur':''}" data-gi="all">Consolidado ${state.month==='all'?'geral':'do mês'}<small>${ml.length} lote(s) · última contagem</small></button>`
-      + [...ml].reverse().map(l=>`<div class="li ${state.scope===l.gi&&state.view==='sku'?'cur':''}"><button type="button" class="lbtn" data-gi="${l.gi}"><b>${esc(l.label)}</b><small>${fDate(l.date)} · ${l.rows.length} linhas · ${nDivOf(l)} divergente(s)</small></button>${state.sample?'':`<button type="button" class="x" data-del="${esc(l.id)}" aria-label="Excluir ${esc(l.label)}" title="Excluir lote">×</button>`}</div>`).join('')
+    ? `<button type="button" class="li all ${state.scope==='all'&&state.view!=='evo'?'cur':''}" data-gi="all">Consolidado ${state.month==='all'?'geral':'do mês'}<small>${ml.length} lote(s) · última contagem</small></button>`
+      + [...ml].reverse().map(l=>`<div class="li ${state.scope===l.gi&&state.view!=='evo'?'cur':''}"><button type="button" class="lbtn" data-gi="${l.gi}"><b>${esc(l.label)}</b><small>${fDate(l.date)} · ${l.rows.length} linhas · ${nDivOf(l)} divergente(s)</small></button>${state.sample?'':`<button type="button" class="x" data-del="${esc(l.id)}" aria-label="Excluir ${esc(l.label)}" title="Excluir lote">×</button>`}</div>`).join('')
     : '<p class="hint">Nenhum lote neste mês.</p>';
   $('#lotList').querySelectorAll('[data-gi]').forEach(b=>b.addEventListener('click',()=>{
-    state.scope = b.dataset.gi==='all' ? 'all' : +b.dataset.gi; state.view='sku'; state.open.clear(); render(); if(innerWidth<=980) $('#app').classList.add('side-closed');
+    state.scope = b.dataset.gi==='all' ? 'all' : +b.dataset.gi; if(state.view==='evo') state.view='sku'; state.open.clear(); render(); if(innerWidth<=980) $('#app').classList.add('side-closed');
   }));
   $('#lotList').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{
     if(!confirm('Excluir este lote do histórico?')) return;
@@ -743,6 +816,125 @@ function bindSku(skus){
   $('#sort').addEventListener('change',e=>{ state.sort=e.target.value; renderTable(skus); });
   $('#onlyDiv').addEventListener('change',e=>{ state.onlyDiv=e.target.checked; renderTable(skus); });
   document.querySelectorAll('tr.lote').forEach(tr=>tr.addEventListener('click',()=>{ state.scope=+tr.dataset.lote; state.open.clear(); render(); }));
+}
+
+/* ============ RENDER: acuracidade de SKUs (relatório) ============ */
+const pctCls = x => x===null ? '' : x>=0.98 ? 'g' : x<0.8 ? 'r' : '';
+const fP2 = x => x===null ? '–' : fPct(x,2);
+const fP1 = x => x===null ? '–' : fPct(x,1);
+function accCols(t, kind){   // kind: 'sku' (contagem de SKUs) ou 'end' (contagem de endereços)
+  const nA = kind==='sku' ? t.sk.size : t.n, nD = kind==='sku' ? t.skD.size : t.nDiv;
+  return `<td>${t.aud>0?fBRL0(t.aud):'–'}</td><td>${t.dv?fBRL0(t.dv):'–'}</td><td class="${t.sem<0?'r':''}">${t.aud>0?fBRL0(t.sem):'–'}</td><td>${fP1(t.accF)}</td>
+    <td>${fInt(t.ger)}</td><td>${fInt(t.qd)}</td><td>${fP1(t.accQ)}</td>
+    <td>${fInt(nA)}</td><td>${fInt(nD)}</td><td>${nA?fP1(1-nD/nA):'–'}</td>`;
+}
+const accHead = kind => `<th>Valor<br>auditado</th><th>Diverg.<br>R$</th><th>Valor sem<br>diverg.</th><th>Acur.<br>fin.</th><th>Qtd.<br>gerada</th><th>Qtd.<br>diverg.</th><th>Acur.<br>qtd.</th>`
+  + (kind==='sku' ? `<th>SKUs<br>audit.</th><th>SKUs<br>diverg.</th><th>SKUs<br>OK</th>` : `<th>End.<br>audit.</th><th>End.<br>diverg.</th><th>End.<br>OK</th>`);
+function sumGroup(list){   // agrega SKUs numa linha só
+  const g = {n:0,nDiv:0,aud:0,dv:0,ger:0,qd:0};
+  list.forEach(s=>{ for(const k in g) g[k]+=s[k]; });
+  g.sem = g.aud-g.dv; g.accF = g.aud>0 ? accOf(g.aud,g.dv) : null; g.accQ = accOf(g.ger,g.qd);
+  return g;
+}
+function renderAcc(){
+  const rows = scopeRows(), box = $('#body');
+  if(!rows.length){ box.innerHTML = '<div class="panel empty">Nenhum dado carregado.</div>'; $('#sub').textContent=''; return; }
+  const {T, area, skus} = accAnalyze(rows);
+  const scopeName = state.scope==='all' ? 'Consolidado '+monthShort(state.month) : state.lots[state.scope].label;
+  const nLotes = state.scope==='all' ? monthLots().length : 1;
+  const stamp = new Date().toLocaleString('pt-BR');
+  $('#sub').textContent = `${scopeName} · ${skus.length} SKUs · ${T.n} endereços`;
+  const skuOk = 1 - T.skD.size/T.sk.size;
+
+  // tabela por SKU: divergentes (maior R$ primeiro) + linha agregada dos sem divergência
+  const divs = skus.filter(s=>s.nDiv>0).sort((a,b)=>b.dv-a.dv || b.qd-a.qd);
+  const oks = skus.filter(s=>s.nDiv===0);
+  const CAP = 20, shown = state.accAll ? divs : divs.slice(0,CAP), rest = divs.slice(shown.length);
+  const skuRow = s => `<tr><td><span class="pn">${esc(s.prod)}</span><span class="pc">${s.cod}</span>${s.noP.size?' <span class="np">sem preço</span>':''}</td>${accCols(s,'end')}</tr>`;
+  const aggRow = (label, list) => { const g=sumGroup(list); return `<tr class="agg"><td>${label}</td>${accCols(g,'end')}</tr>`; };
+  const skuBody = shown.map(skuRow).join('')
+    + (rest.length ? aggRow(`Outros ${rest.length} SKUs com divergência`, rest) : '')
+    + (oks.length ? aggRow(`${oks.length} SKU(s) sem divergência`, oks) : '')
+    + `<tr class="tot"><td>TOTAL</td>${accCols(T,'end')}</tr>`;
+
+  const noPrice = T.noP.size;
+  const saldoQ = T.sQ - T.fQ, saldoV = T.sV - T.fV;
+  const netCls = saldoV>0 ? 'pos' : saldoV<0 ? 'neg' : 'zero';
+  const sgn = n => n>0 ? '+' : '';
+
+  box.innerHTML = `
+  ${state.sample ? '<div class="banner noexp">Dados de exemplo. Adicione os lotes reais na barra lateral.</div>' : ''}
+  <div id="accReport">
+    <div class="ah">
+      <div><h1>Acuracidade de SKUs</h1>
+        <div class="sub">${esc(scopeName)} · ${skus.length} SKUs em ${T.n} endereços${nLotes>1?` · ${nLotes} lotes`:''} · Atualizado em ${stamp}</div></div>
+      <div class="acts noexp"><button type="button" id="accCopy">Copiar imagem</button><button type="button" class="primary" id="accPng">Baixar imagem</button></div>
+    </div>
+
+    <div class="kgrid">
+      <div class="kc"><div class="k">Acuracidade financeira</div><div class="v ${pctCls(T.accF)}">${fP2(T.accF)}</div></div>
+      <div class="kc"><div class="k">Acuracidade quantitativa</div><div class="v ${pctCls(T.accQ)}">${fP2(T.accQ)}</div></div>
+      <div class="kc"><div class="k">SKUs 100% OK</div><div class="v ${pctCls(skuOk)}">${fP2(skuOk)}</div><div class="s">${T.sk.size-T.skD.size} de ${T.sk.size} SKUs · endereços ${fP1(1-T.nDiv/T.n)} OK</div></div>
+      <div class="kc"><div class="k">Valor total auditado</div><div class="v">${fBRL0(T.aud)}</div></div>
+      <div class="kc"><div class="k">Divergência absoluta</div><div class="v r">${fBRL0(T.dv)}</div></div>
+      <div class="kc"><div class="k">Valor sem divergência</div><div class="v g">${fBRL0(T.sem)}</div></div>
+    </div>
+
+    <section class="ablock">
+      <h2>Resumo por área</h2>
+      <div class="tw"><table class="at">
+        <thead><tr><th>Área</th>${accHead('sku')}</tr></thead>
+        <tbody>
+          <tr><td>Picking</td>${accCols(area.A,'sku')}</tr>
+          <tr><td>Pulmão</td>${accCols(area.P,'sku')}</tr>
+          <tr class="tot"><td>TOTAL</td>${accCols(T,'sku')}</tr>
+        </tbody></table></div>
+    </section>
+
+    <section class="ablock">
+      <div class="hd"><h2>Resumo por SKU</h2>
+        ${divs.length>CAP ? `<button type="button" class="btn2 noexp" id="accAll">${state.accAll?`Mostrar só os ${CAP} maiores`:`Mostrar todos os ${divs.length} divergentes`}</button>` : ''}</div>
+      <div class="tw"><table class="at">
+        <thead><tr><th>SKU</th>${accHead('end')}</tr></thead>
+        <tbody>${skuBody}</tbody></table></div>
+    </section>
+
+    <h2 class="acomp-h">Composição da divergência</h2>
+    <div class="acomp">
+      <div class="cc gain"><h3>Ganho / Sobra</h3><dl>
+        <dt>Quantidade</dt><dd>${fInt(T.sQ)}</dd><dt>Valor</dt><dd>${fBRL0(T.sV)}</dd><dt>SKUs</dt><dd>${T.skS.size}</dd></dl></div>
+      <div class="cc loss"><h3>Perda / Falta</h3><dl>
+        <dt>Quantidade</dt><dd>${fInt(T.fQ)}</dd><dt>Valor</dt><dd>${fBRL0(T.fV)}</dd><dt>SKUs</dt><dd>${T.skF.size}</dd></dl></div>
+      <div class="cc net ${netCls}"><h3>Saldo líquido</h3><dl>
+        <dt>Quantidade</dt><dd>${sgn(saldoQ)}${fInt(saldoQ)}</dd><dt>Valor</dt><dd>${sgn(saldoV)}${fBRL0(saldoV)}</dd><dt>SKUs divergentes</dt><dd>${T.skD.size}</dd></dl></div>
+    </div>
+
+    <p class="anote">Quantidades em unidades (CX 6 = 6 un.). Valor auditado = qtd. gerada × preço unitário do SKU, calculado pelo Valor Divergência ÷ Divergência da última vez que o SKU divergiu no histórico.${noPrice?` ${noPrice} de ${T.sk.size} SKUs nunca divergiram e ficam sem preço, fora do valor auditado (a acuracidade financeira sai um pouco conservadora).`:''} ${state.scope==='all'?'Consolidado usa a última contagem de cada endereço/SKU.':''}</p>
+  </div>`;
+
+  $('#accPng').addEventListener('click', ()=>exportAcc('download'));
+  $('#accCopy').addEventListener('click', ()=>exportAcc('copy'));
+  $('#accAll')?.addEventListener('click', ()=>{ state.accAll=!state.accAll; renderAcc(); });
+}
+async function accCanvas(){
+  const app = $('#app'), el = $('#accReport');
+  app.classList.add('exporting');
+  try{
+    return await html2canvas(el,{scale:2,backgroundColor:getComputedStyle(document.body).backgroundColor,useCORS:true,windowWidth:1400,width:el.scrollWidth,height:el.scrollHeight});
+  } finally { app.classList.remove('exporting'); }
+}
+async function exportAcc(mode){
+  let canvas; try{ canvas = await accCanvas(); }catch(err){ alert('Falha ao gerar imagem: '+err.message); return; }
+  const name = 'acuracidade_skus_'+(state.scope==='all'?(state.month||'geral'):safeId(state.lots[state.scope].id))+'_'+isoToday()+'.png';
+  const download = () => { const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download=name; a.click(); };
+  if(mode==='copy' && navigator.clipboard && window.ClipboardItem){
+    try{
+      const blob = await new Promise(ok=>canvas.toBlob(ok,'image/png'));
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      toast('Imagem copiada. É só colar no WhatsApp.'); return;
+    }catch(e){ toast('Não deu para copiar neste navegador. Baixei a imagem.'); }
+  }
+  download();
 }
 
 /* ============ RENDER: evolução e recorrência ============ */
@@ -931,6 +1123,7 @@ $('#fileJson').addEventListener('change', async e=>{
   e.target.value='';
 });
 $('#btnPng').addEventListener('click', async ()=>{
+  if(state.view==='acc') return exportAcc('download');
   const el = $('#report');
   el.classList.add('exporting');
   try{
